@@ -4,20 +4,29 @@ This document provides context for the Gemini agent when working on the `depende
 
 ## Project Overview
 
-This is a **Frontend-only React application** designed to simulate and visualize dependency management for a hypothetical microservice ecosystem. It helps users understand how version changes in upstream libraries (Models, Common Libs, Repos) propagate to downstream applications (Readers, Processors).
+This is a **Frontend-only React application** designed to simulate and visualize dependency management for a hypothetical microservice ecosystem. It helps users understand how version changes in upstream libraries (Models, Common Libs, Repos) propagate to downstream applications (Readers, Processors). The application uses client-side routing to provide both a main visualizer dashboard and documentation/guides.
 
 ## Architecture & Codebase
 
 - **Type**: Single Page Application (SPA).
 - **Build Tool**: Vite.
 - **Styling**: Tailwind CSS (Utility-first).
-- **State Management**: React `useState` and `useMemo` within `App.jsx`.
+- **Routing**: `react-router-dom` for navigation.
+- **State Management**: React `useState` and `useMemo` primarily within `src/pages/MainPage.jsx`.
+- **Testing**: `vitest` and `react-testing-library`.
 
 ### Key Files
 
-- **`src/App.jsx`**: Currently contains **all** the business logic, UI components, and state definitions.
-  - *Note*: This file is large and contains `INITIAL_NODES`, `INITIAL_EDGES`, utility functions, and the main `App` component. Future refactoring tasks might involve breaking this down into smaller sub-components (e.g., `NodeCard`, `Sidebar`, `GraphBoard`).
-- **`src/main.jsx`**: Standard React DOM entry point.
+- **`src/App.jsx`**: Application shell. Handles routing (BrowserRouter) and global layout (Navbar).
+- **`src/pages/MainPage.jsx`**: Core business logic and visualization dashboard. Contains:
+  - `INITIAL_NODES` / `INITIAL_EDGES` configuration.
+  - State for nodes, edges, and application dependencies.
+  - Logic for version bumping, drift detection, and updates.
+- **`src/pages/VersioningGuide.jsx`**: Static documentation page explaining versioning concepts.
+- **`src/components/`**: Reusable UI components.
+  - `DependencyDetails.jsx`: Component for displaying detailed info about a selected dependency.
+  - `Navbar.jsx`: Global navigation bar.
+  - `Modal.jsx`: Reusable modal wrapper.
 
 ## Domain Concepts
 

@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import App from './App';
+import MainPage from './MainPage';
 
 describe('Dependency Interaction', () => {
   it('allows deleting a dependency', async () => {
-    render(<App />);
+    render(<MainPage />);
 
     // Check node exists
     expect(screen.getByTestId('node-repo-a')).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('Dependency Interaction', () => {
   });
 
   it('allows creating a release with custom version and optional fields', async () => {
-    render(<App />);
+    render(<MainPage />);
 
     const node = screen.getByTestId('node-repo-b');
     fireEvent.click(node);
