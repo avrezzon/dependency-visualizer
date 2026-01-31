@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import DependencyDetails from './components/DependencyDetails';
-import React from 'react';
 
 describe('DependencyDetails', () => {
   const mockNode = {
