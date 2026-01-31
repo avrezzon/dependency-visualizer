@@ -49,6 +49,10 @@ describe('App', () => {
     const patchBtn = screen.getByRole('button', { name: /Patch/i });
     fireEvent.click(patchBtn);
 
+    // Confirm Release in Modal
+    const publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
     // Expect version to become v1.0.1
     // findAllByText returns an array of elements. We just want to ensure at least one exists.
     const versions = await screen.findAllByText('v1.0.1');
@@ -66,6 +70,10 @@ describe('App', () => {
     const minorBtn = screen.getByRole('button', { name: /Minor/i });
     fireEvent.click(minorBtn);
 
+    // Confirm Release in Modal
+    const publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
     // Expect version to become v1.1.0
     const versions = await screen.findAllByText('v1.1.0');
     expect(versions.length).toBeGreaterThan(0);
@@ -81,6 +89,10 @@ describe('App', () => {
     // Click 'Major' button
     const majorBtn = screen.getByRole('button', { name: /Major/i });
     fireEvent.click(majorBtn);
+
+    // Confirm Release in Modal
+    const publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
 
     // Expect version to become v2.0.0
     const versions = await screen.findAllByText('v2.0.0');
@@ -129,6 +141,10 @@ describe('App', () => {
     const patchBtn = screen.getByRole('button', { name: /Patch/i });
     fireEvent.click(patchBtn);
     
+    // Confirm Release
+    let publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
     // Now select an app that depends on ext.models (reader-a -> common -> ext.models)
     // Or select common directly to see the drift
     const commonLib = screen.getByTestId('node-common');
@@ -142,15 +158,17 @@ describe('App', () => {
     const minorBtn = screen.getByRole('button', { name: /Minor/i });
     fireEvent.click(minorBtn); // common is now v1.1.0
     
+    // Confirm Release
+    publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
     // Select reader-a to see if it shows dependency drift
     const readerA = screen.getByTestId('node-reader-a');
     fireEvent.click(readerA);
     
     // Should show Dependency Drift warning since it still uses old common version
-    const rebuildBtn = screen.queryByRole('button', { name: /Rebuild & Bump App/i });
-    if (rebuildBtn) {
-      expect(rebuildBtn).toBeInTheDocument();
-    }
+    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump App/i });
+    expect(rebuildBtn).toBeInTheDocument();
   });
 
   it('updates app dependencies when Rebuild & Bump App is clicked', async () => {
@@ -162,19 +180,24 @@ describe('App', () => {
     const minorBtn = screen.getByRole('button', { name: /Minor/i });
     fireEvent.click(minorBtn);
     
+    // Confirm Release
+    let publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
     // Select an app (reader-a)
     const readerA = screen.getByTestId('node-reader-a');
     fireEvent.click(readerA);
     
     // Check if rebuild button exists and click it
-    const rebuildBtn = screen.queryByRole('button', { name: /Rebuild & Bump App/i });
-    if (rebuildBtn) {
-      fireEvent.click(rebuildBtn);
-      
-      // After rebuilding, verify the action occurred
-      // The button click should trigger the rebuild
-      expect(rebuildBtn).toBeDefined();
-    }
+    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump App/i });
+    fireEvent.click(rebuildBtn);
+
+    // The rebuild triggers a bump, which opens the modal
+    publishBtn = await screen.findByRole('button', { name: /Publish Release/i });
+    fireEvent.click(publishBtn);
+
+    // After rebuilding, verify the action occurred
+    expect(rebuildBtn).toBeDefined();
   });
 
   it('highlights related nodes on hover', () => {
