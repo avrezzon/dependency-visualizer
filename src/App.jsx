@@ -13,6 +13,7 @@ import {
   Trash2
 } from 'lucide-react';
 import Modal from './components/Modal';
+import DependencyDetails from './components/DependencyDetails';
 
 // --- Configuration & Initial Data ---
 
@@ -118,6 +119,7 @@ const Badge = ({ children, color = "slate" }) => {
 export default function App() {
   const [nodes, setNodes] = useState(INITIAL_NODES);
   const [edges, setEdges] = useState(INITIAL_EDGES);
+  const [view, setView] = useState('dashboard');
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -240,11 +242,15 @@ export default function App() {
         return {
           ...n,
           version: releaseForm.version,
-          latestRelease: {
-            prLink: releaseForm.prLink,
-            changelog: releaseForm.changelog,
-            date: new Date().toISOString()
-          }
+          history: [
+            ...(n.history || []),
+            {
+              version: releaseForm.version,
+              prLink: releaseForm.prLink,
+              changelog: releaseForm.changelog,
+              date: new Date().toISOString()
+            }
+          ]
         };
       }
       return n;
@@ -360,6 +366,23 @@ export default function App() {
       consumers: []
     });
   };
+
+  if (view === 'details' && selectedNode) {
+    const node = nodesMap.get(selectedNode);
+    if (node) {
+      const upstream = connections.upstream[node.id] || [];
+      const downstream = connections.downstream[node.id] || [];
+      return (
+        <DependencyDetails
+          node={node}
+          onBack={() => setView('dashboard')}
+          upstreamIds={upstream}
+          downstreamIds={downstream}
+          nodesMap={nodesMap}
+        />
+      );
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-6">
@@ -502,6 +525,15 @@ export default function App() {
 
                       {/* Actions */}
                       <div className="space-y-4 mb-8">
+                        {node.history && node.history.length > 0 && (
+                          <button
+                            onClick={() => setView('details')}
+                            className="w-full py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                          >
+                            <Box className="w-4 h-4" />
+                            View Version History
+                          </button>
+                        )}
                         <div className="text-sm font-medium text-slate-700">Release Management</div>
                         <div className="grid grid-cols-3 gap-2">
                           <button 
