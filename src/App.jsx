@@ -7,8 +7,10 @@ import {
   Database, 
   Cpu, 
   Activity,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
+import Modal from './components/Modal';
 
 // --- Configuration & Initial Data ---
 
@@ -113,8 +115,15 @@ const Badge = ({ children, color = "slate" }) => {
 
 export default function App() {
   const [nodes, setNodes] = useState(INITIAL_NODES);
+  const [edges, setEdges] = useState(INITIAL_EDGES);
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Release Management State
+  const [showReleaseModal, setShowReleaseModal] = useState(false);
+  const [releaseForm, setReleaseForm] = useState({ version: '', prLink: '', changelog: '' });
+  const [pendingNodeId, setPendingNodeId] = useState(null);
   
   // Track which dependencies the apps are currently "using". 
   // In a real app, this would be in a lockfile. Here, we simulate that apps store 
@@ -147,7 +156,7 @@ export default function App() {
     const downstream = {}; // Key: Source, Value: [Targets]
     const upstream = {};   // Key: Target, Value: [Sources]
     
-    INITIAL_EDGES.forEach(({ source, target }) => {
+    edges.forEach(({ source, target }) => {
       if (!downstream[source]) downstream[source] = [];
       downstream[source].push(target);
       
@@ -155,7 +164,7 @@ export default function App() {
       upstream[target].push(source);
     });
     return { downstream, upstream };
-  }, []);
+  }, [edges]);
 
   // Determine which apps are outdated
   const statusMap = useMemo(() => {
@@ -187,14 +196,53 @@ export default function App() {
     return status;
   }, [nodes, appDependencies, nodesMap]);
 
-  // Handle version bump
+  // Handle delete node
+  const handleDeleteNode = () => {
+    if (!selectedNode) return;
+
+    // Remove from nodes
+    setNodes(prev => prev.filter(n => n.id !== selectedNode));
+
+    // Remove edges connected to this node
+    setEdges(prev => prev.filter(e => e.source !== selectedNode && e.target !== selectedNode));
+
+    // Reset selection
+    setSelectedNode(null);
+    setShowDeleteConfirm(false);
+  };
+
+  // Handle version bump (opens modal)
   const handleBump = (nodeId, type) => {
+    const node = nodesMap.get(nodeId);
+    if (!node) return;
+
+    const nextVersion = bumpString(node.version, type);
+    setPendingNodeId(nodeId);
+    setReleaseForm({ version: nextVersion, prLink: '', changelog: '' });
+    setShowReleaseModal(true);
+  };
+
+  // Handle confirm release
+  const handleConfirmRelease = () => {
+    if (!pendingNodeId) return;
+
     setNodes(prev => prev.map(n => {
-      if (n.id === nodeId) {
-        return { ...n, version: bumpString(n.version, type) };
+      if (n.id === pendingNodeId) {
+        return {
+          ...n,
+          version: releaseForm.version,
+          latestRelease: {
+            prLink: releaseForm.prLink,
+            changelog: releaseForm.changelog,
+            date: new Date().toISOString()
+          }
+        };
       }
       return n;
     }));
+
+    setShowReleaseModal(false);
+    setPendingNodeId(null);
   };
 
   // Handle "Updating" an app (rebuilding it with latest deps)
@@ -362,7 +410,16 @@ export default function App() {
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
                         <div>
-                          <h2 className="text-xl font-bold text-slate-800">{node.label}</h2>
+                          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            {node.label}
+                            <button
+                               onClick={() => setShowDeleteConfirm(true)}
+                               className="text-slate-400 hover:text-red-500 transition-colors"
+                               title="Delete Dependency"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                          </h2>
                           <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">
                             {node.category}
                           </div>
@@ -481,6 +538,97 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Dependency"
+        footer={
+          <>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteNode}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </>
+        }
+      >
+        <p className="text-slate-600">
+          Are you sure you want to delete <span className="font-bold">{nodesMap.get(selectedNode)?.label}</span>?
+          This action cannot be undone.
+        </p>
+      </Modal>
+
+      {/* Release Modal */}
+      <Modal
+        isOpen={showReleaseModal}
+        onClose={() => setShowReleaseModal(false)}
+        title="Create New Release"
+        footer={
+          <>
+            <button
+              onClick={() => setShowReleaseModal(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmRelease}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Publish Release
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Version <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={releaseForm.version}
+              onChange={(e) => setReleaseForm(prev => ({ ...prev, version: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              placeholder="1.0.0"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Pull Request Link <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="text"
+              value={releaseForm.prLink}
+              onChange={(e) => setReleaseForm(prev => ({ ...prev, prLink: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              placeholder="https://github.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Changelog <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={releaseForm.changelog}
+              onChange={(e) => setReleaseForm(prev => ({ ...prev, changelog: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+              placeholder="What changed in this release..."
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
