@@ -24,60 +24,111 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- -f json -o lint-results.json
+        continue-on-error: true
 
       - name: Run Tests
         id: test
         run: npm test -- run --reporter=json --outputFile=test-results.json
         continue-on-error: true
 
-      - name: Post Test Results
+      - name: Post Results
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            
+            function getIcon(isSuccess) {
+              return isSuccess ? '✅' : '❌';
+            }
+
+            // --- Process Lint Results ---
+            let lintBody = '';
+            let lintSuccess = true;
+            let lintErrors = 0;
+            let lintWarnings = 0;
+
             try {
-              const results = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
-              
-              const success = results.success;
-              const total = results.numTotalTests;
-              const passed = results.numPassedTests;
-              const failed = results.numFailedTests;
-              
-              const icon = success ? '✅' : '❌';
-              
-              const body = `### ${icon} Test Results
-              
-              | Metric | Count |
-              |--------|-------|
-              | **Total** | ${total} |
-              | **Passed** | ${passed} |
-              | **Failed** | ${failed} |
-              
-              <details>
-              <summary>Test Summary Details</summary>
-              
-              \`\`\`json
-              ${JSON.stringify({
-                numTotalTestSuites: results.numTotalTestSuites,
-                numPassedTestSuites: results.numPassedTestSuites,
-                numFailedTestSuites: results.numFailedTestSuites
-              }, null, 2)}
-              \`\`\`
-              </details>
-              `;
-              
+              if (fs.existsSync('lint-results.json')) {
+                const lintResults = JSON.parse(fs.readFileSync('lint-results.json', 'utf8'));
+                // ESLint Output is an array of file results
+                lintResults.forEach(result => {
+                  lintErrors += result.errorCount;
+                  lintWarnings += result.warningCount;
+                });
+                
+                // Assuming strict linting (no warnings allowed per project config)
+                lintSuccess = lintErrors === 0 && lintWarnings === 0;
+                
+                lintBody = `### ${getIcon(lintSuccess)} Lint Results
+                
+                | Metric | Count |
+                |--------|-------|
+                | **Errors** | ${lintErrors} |
+                | **Warnings** | ${lintWarnings} |`;
+                
+              } else {
+                lintBody = `### ⚠️ Lint Results\n\nLint results file not found (Command likely failed before writing output).`;
+                lintSuccess = false;
+              }
+            } catch (error) {
+              lintBody = `### ⚠️ Lint Results\n\nError parsing lint results: ${error.message}`;
+              lintSuccess = false;
+            }
+
+            // --- Process Test Results ---
+            let testBody = '';
+            let testSuccess = false; // Default to false if file missing
+
+            try {
+              if (fs.existsSync('test-results.json')) {
+                const results = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+                testSuccess = results.success;
+                
+                testBody = `### ${getIcon(testSuccess)} Test Results
+                
+                | Metric | Count |
+                |--------|-------|
+                | **Total** | ${results.numTotalTests} |
+                | **Passed** | ${results.numPassedTests} |
+                | **Failed** | ${results.numFailedTests} |
+                
+                <details>
+                <summary>Test Summary Details</summary>
+                
+                \`\`\`json
+                ${JSON.stringify({
+                  numTotalTestSuites: results.numTotalTestSuites,
+                  numPassedTestSuites: results.numPassedTestSuites,
+                  numFailedTestSuites: results.numFailedTestSuites
+                }, null, 2)}
+                \`\`\`
+                </details>`;
+              } else {
+                testBody = `### ⚠️ Test Results\n\nTest results file not found.`;
+              }
+            } catch (error) {
+              testBody = `### ⚠️ Test Results\n\nError parsing test results: ${error.message}`;
+            }
+
+            // --- Post Comment ---
+            const finalBody = `${lintBody}\n\n---\n\n${testBody}`;
+            
+            try {
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: body
+                body: finalBody
               });
-              
-              if (!success) {
-                core.setFailed(`Tests failed: ${failed} tests failed.`);
-              }
-              
-            } catch (error) {
-              core.setFailed('Failed to process or post test results: ' + error.message);
+            } catch (e) {
+               console.error("Failed to post comment: " + e.message);
+            }
+            
+            // --- Set Workflow Status ---
+            if (!lintSuccess || !testSuccess) {
+              const messages = [];
+              if (!lintSuccess) messages.push(`Linting failed (${lintErrors} errors, ${lintWarnings} warnings)`);
+              if (!testSuccess) messages.push(`Tests failed`);
+              core.setFailed(messages.join(', '));
             }

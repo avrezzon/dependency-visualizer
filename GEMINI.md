@@ -36,3 +36,19 @@ When modifying the logic, keep these domain concepts in mind:
 - **Styling**: Use Tailwind classes directly in JSX. Avoid creating separate CSS files unless for global resets.
 - **Icons**: Use `lucide-react` for all iconography.
 - **Code Style**: Standard JavaScript/React formatting.
+
+## Development Workflow & Standards
+
+### Test-Driven Development (TDD)
+**All code changes must be approached using TDD.**
+
+1.  **Red**: Write a failing test that defines the desired behavior or reproduces a bug.
+2.  **Green**: Write the minimal amount of code necessary to pass the test.
+3.  **Refactor**: Improve the code structure while ensuring tests remain green.
+
+**Do not implement features without first defining them in a test.**
+
+### CI/CD & Feedback Loop
+The project uses GitHub Actions for Continuous Integration.
+- **Pull Requests**: Tests and Linting are automatically run on every PR.
+- **Feedback**: Agents (e.g., Jules) must monitor PR checks. If a PR build fails (Lint or Test), the agent must analyze the failure posted in the PR comments, reproduce it locally, and push a fix. The PR status is the source of truth for task completion.

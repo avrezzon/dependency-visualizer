@@ -1,17 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { 
-  GitBranch, 
   Box, 
   Layers, 
   ArrowRight, 
   AlertCircle, 
-  CheckCircle, 
   Database, 
   Cpu, 
-  BookOpen, 
   Activity,
-  RefreshCw,
-  Zap
+  RefreshCw
 } from 'lucide-react';
 
 // --- Configuration & Initial Data ---
@@ -275,7 +271,7 @@ export default function App() {
           {/* Main Visualization Board */}
           <Card className="lg:col-span-3 p-6 min-h-[600px] overflow-x-auto">
             <div className="flex justify-between min-w-[800px] h-full gap-8">
-              {categories.map((cat, idx) => (
+              {categories.map((cat) => (
                 <div key={cat} className="flex-1 flex flex-col gap-4 relative">
                   <div className="text-xs uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-200 pb-2 mb-2">
                     {cat}
