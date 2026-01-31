@@ -35,6 +35,7 @@ describe('DependencyDetails', () => {
   ]);
 
   const mockOnBack = vi.fn();
+  const mockOnNodeSelect = vi.fn();
 
   it('renders node details correctly', () => {
     render(
@@ -100,5 +101,26 @@ describe('DependencyDetails', () => {
 
     expect(screen.getByText('Upstream One')).toBeInTheDocument();
     expect(screen.getByText('Downstream One')).toBeInTheDocument();
+  });
+
+  it('calls onNodeSelect when a dependency is clicked', () => {
+    render(
+      <DependencyDetails
+        node={mockNode}
+        onBack={mockOnBack}
+        upstreamIds={mockUpstreamIds}
+        downstreamIds={mockDownstreamIds}
+        nodesMap={mockNodesMap}
+        onNodeSelect={mockOnNodeSelect}
+      />
+    );
+
+    // Click upstream
+    fireEvent.click(screen.getByText('Upstream One'));
+    expect(mockOnNodeSelect).toHaveBeenCalledWith('upstream-1');
+
+    // Click downstream
+    fireEvent.click(screen.getByText('Downstream One'));
+    expect(mockOnNodeSelect).toHaveBeenCalledWith('downstream-1');
   });
 });

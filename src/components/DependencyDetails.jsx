@@ -36,7 +36,7 @@ const Badge = ({ children, color = "slate" }) => {
   );
 };
 
-export default function DependencyDetails({ node, onBack, upstreamIds, downstreamIds, nodesMap }) {
+export default function DependencyDetails({ node, onBack, upstreamIds, downstreamIds, nodesMap, onNodeSelect }) {
   // Sort history by date descending, take last 5
   const history = [...(node.history || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
@@ -92,10 +92,14 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                     const upNode = nodesMap.get(uid);
                     if (!upNode) return null;
                     return (
-                      <div key={uid} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200">
+                      <div
+                        key={uid}
+                        onClick={() => onNodeSelect(uid)}
+                        className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 cursor-pointer transition-colors hover:bg-slate-100"
+                      >
                         <div className="flex items-center gap-3">
                           {getIcon(upNode.type)}
-                          <span className="text-sm font-medium text-slate-700">{upNode.label}</span>
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-600">{upNode.label}</span>
                         </div>
                         <Badge>v{upNode.version}</Badge>
                       </div>
@@ -118,10 +122,14 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                     const downNode = nodesMap.get(did);
                     if (!downNode) return null;
                     return (
-                      <div key={did} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200">
+                      <div
+                        key={did}
+                        onClick={() => onNodeSelect(did)}
+                        className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 cursor-pointer transition-colors hover:bg-slate-100"
+                      >
                         <div className="flex items-center gap-3">
                           {getIcon(downNode.type)}
-                          <span className="text-sm font-medium text-slate-700">{downNode.label}</span>
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-600">{downNode.label}</span>
                         </div>
                         <Badge>v{downNode.version}</Badge>
                       </div>

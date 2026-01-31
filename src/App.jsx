@@ -379,6 +379,7 @@ export default function App() {
           upstreamIds={upstream}
           downstreamIds={downstream}
           nodesMap={nodesMap}
+          onNodeSelect={setSelectedNode}
         />
       );
     }
