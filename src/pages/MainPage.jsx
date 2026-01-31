@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DependencyDetails from '../components/DependencyDetails';
+import VersionBumpButtons from '../components/VersionBumpButtons';
+import { bumpString } from '../utils/versioning';
 
 // --- Configuration & Initial Data ---
 
@@ -85,12 +87,6 @@ const getIcon = (type) => {
   }
 };
 
-const bumpString = (ver, type) => {
-  const [major, minor, patch] = ver.split('.').map(Number);
-  if (type === 'major') return `${major + 1}.0.0`;
-  if (type === 'minor') return `${major}.${minor + 1}.0`;
-  return `${major}.${minor}.${patch + 1}`;
-};
 
 // --- Components ---
 
@@ -599,32 +595,7 @@ export default function MainPage() {
                           </button>
                         )}
                         <div className="text-sm font-medium text-slate-700">Release Management</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            onClick={() => handleBump(node.id, 'major')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
-                            title={`Perform a major version increment (${node.version} -> ${bumpString(node.version, 'major')})`}
-                          >
-                            <span>Major</span>
-                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'major')}</span>
-                          </button>
-                          <button
-                            onClick={() => handleBump(node.id, 'minor')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
-                            title={`Perform a minor version increment (${node.version} -> ${bumpString(node.version, 'minor')})`}
-                          >
-                            <span>Minor</span>
-                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'minor')}</span>
-                          </button>
-                          <button
-                            onClick={() => handleBump(node.id, 'patch')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
-                            title={`Perform a patch version increment (${node.version} -> ${bumpString(node.version, 'patch')})`}
-                          >
-                            <span>Patch</span>
-                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'patch')}</span>
-                          </button>
-                        </div>
+                        <VersionBumpButtons node={node} handleBump={handleBump} />
 
                         {status.isOutdated && (
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
