@@ -9,7 +9,7 @@ describe('Transitive Dependency Drift', () => {
     // Chain: reader-a -> common-lib -> ext.models
     
     // 1. Bump ext.models (Foundation) to v1.0.1
-    const extModels = screen.getByTestId('node-ext.models');
+    const extModels = screen.getByTestId('node-core:ext-models');
     fireEvent.click(extModels);
     
     const patchBtn = screen.getByRole('button', { name: /Patch/i });
@@ -24,7 +24,7 @@ describe('Transitive Dependency Drift', () => {
     
     // reader-a should be transitively outdated because common-lib is outdated.
     
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     fireEvent.click(readerA);
     
     // Expect "Dependency Drift" warning

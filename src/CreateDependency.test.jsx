@@ -25,7 +25,7 @@ describe('App - Add Dependency', () => {
 
     // Select Consumer (e.g. Reader A)
     // The consumer list uses checkboxes. The label contains "Reader A".
-    const consumerCheckbox = screen.getByRole('checkbox', { name: /Reader A/i });
+    const consumerCheckbox = screen.getByRole('checkbox', { name: /reader-a/i });
     fireEvent.click(consumerCheckbox);
 
     // Submit
@@ -41,7 +41,7 @@ describe('App - Add Dependency', () => {
 
     // Verify Connection
     // Select Reader A and check if "New Lib" is in Upstream (Requires)
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     fireEvent.click(readerA);
 
     // Check sidebar

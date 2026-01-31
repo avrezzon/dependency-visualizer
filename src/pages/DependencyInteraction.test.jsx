@@ -7,10 +7,10 @@ describe('Dependency Interaction', () => {
     render(<MainPage />);
 
     // Check node exists
-    expect(screen.getByTestId('node-repo-a')).toBeInTheDocument();
+    expect(screen.getByTestId('node-data:repo-a')).toBeInTheDocument();
 
     // Select a node
-    fireEvent.click(screen.getByTestId('node-repo-a'));
+    fireEvent.click(screen.getByTestId('node-data:repo-a'));
 
     // Find Delete button (Trash icon)
     // The button has title "Delete Dependency"
@@ -26,14 +26,14 @@ describe('Dependency Interaction', () => {
 
     // Node should be gone
     await waitFor(() => {
-      expect(screen.queryByTestId('node-repo-a')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('node-data:repo-a')).not.toBeInTheDocument();
     });
   });
 
   it('allows creating a release with custom version and optional fields', async () => {
     render(<MainPage />);
 
-    const node = screen.getByTestId('node-repo-b');
+    const node = screen.getByTestId('node-data:repo-b');
     fireEvent.click(node);
 
     // Initial version is 1.0.0. Click Patch.
