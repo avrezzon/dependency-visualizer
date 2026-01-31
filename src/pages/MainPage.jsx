@@ -9,13 +9,16 @@ import {
   Activity,
   RefreshCw,
   Plus,
+  Download,
   X,
   Trash2
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import WelcomeModal from '../components/WelcomeModal';
 import DependencyDetails from '../components/DependencyDetails';
 import VersionBumpButtons from '../components/VersionBumpButtons';
 import { bumpString } from '../utils/versioning';
+import { generateRandomGraph } from '../utils/randomGraph';
 
 // --- Configuration & Initial Data ---
 
@@ -116,6 +119,7 @@ export default function MainPage() {
   const [nodes, setNodes] = useState(INITIAL_NODES);
   const [edges, setEdges] = useState(INITIAL_EDGES);
   const [view, setView] = useState('dashboard');
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -413,6 +417,64 @@ export default function MainPage() {
     });
   };
 
+  const handleGenerateRandomGraph = () => {
+    const { nodes, edges, dependencyLocks } = generateRandomGraph();
+    setNodes(nodes);
+    setEdges(edges);
+    setDependencyLocks(dependencyLocks);
+    setShowWelcomeModal(false);
+  };
+
+  const handleStartFresh = () => {
+    setNodes([]);
+    setEdges([]);
+    setDependencyLocks({});
+    setShowWelcomeModal(false);
+  };
+
+  const handleDownloadSession = () => {
+    const sessionData = {
+      nodes,
+      edges,
+      dependencyLocks,
+    };
+    const jsonString = JSON.stringify(sessionData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "depmanager-session.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "application/json") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const sessionData = JSON.parse(e.target.result);
+          if (sessionData.nodes && sessionData.edges && sessionData.dependencyLocks) {
+            setNodes(sessionData.nodes);
+            setEdges(sessionData.edges);
+            setDependencyLocks(sessionData.dependencyLocks);
+            setShowWelcomeModal(false);
+          } else {
+            alert("Invalid JSON format. The file must contain nodes, edges, and dependencyLocks.");
+          }
+        } catch (error) {
+          alert("Error parsing JSON file: " + error.message);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please upload a valid .json file.");
+    }
+  };
+
   if (view === 'details' && selectedNode) {
     const node = nodesMap.get(selectedNode);
     if (node) {
@@ -433,6 +495,13 @@ export default function MainPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-6">
+      {showWelcomeModal && (
+        <WelcomeModal
+          onUpload={handleFileUpload}
+          onNew={handleStartFresh}
+          onRandom={handleGenerateRandomGraph}
+        />
+      )}
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -445,6 +514,13 @@ export default function MainPage() {
             <p className="text-slate-500 mt-1">Visualize dependency chains and manage release consistency.</p>
           </div>
           <div className="flex items-center gap-3">
+             <button
+              onClick={handleDownloadSession}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg shadow-sm hover:bg-slate-700 transition-colors text-sm font-medium"
+            >
+              <Download className="w-4 h-4" />
+              Download Session
+            </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition-colors text-sm font-medium"

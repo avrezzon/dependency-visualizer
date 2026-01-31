@@ -5,7 +5,8 @@ import MainPage from './MainPage';
 describe('MainPage', () => {
   it('renders the header correctly', () => {
     render(<MainPage />);
-    expect(screen.getByText(/DepManager/i)).toBeInTheDocument();
+    // Use a more specific query to distinguish from the modal title
+    expect(screen.getByRole('heading', { level: 1, name: /DepManager/i })).toBeInTheDocument();
     expect(screen.getByText(/Microservice Version Control/i)).toBeInTheDocument();
   });
 
