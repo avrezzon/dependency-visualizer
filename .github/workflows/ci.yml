@@ -38,81 +38,51 @@ jobs:
           script: |
             const fs = require('fs');
             
-            function getIcon(isSuccess) {
-              return isSuccess ? '✅' : '❌';
-            }
+            function getIcon(isSuccess) { return isSuccess ? '✅' : '❌'; }
+            function formatCount(num) { return num.toString().padStart(3, ' '); }
 
-            // --- Process Lint Results ---
-            let lintBody = '';
-            let lintSuccess = true;
-            let lintErrors = 0;
-            let lintWarnings = 0;
-
+            let lintSuccess = true, lintErrors = 0, lintWarnings = 0, lintBody = '';
             try {
               if (fs.existsSync('lint-results.json')) {
                 const lintResults = JSON.parse(fs.readFileSync('lint-results.json', 'utf8'));
-                // ESLint Output is an array of file results
                 lintResults.forEach(result => {
                   lintErrors += result.errorCount;
                   lintWarnings += result.warningCount;
                 });
-                
-                // Assuming strict linting (no warnings allowed per project config)
                 lintSuccess = lintErrors === 0 && lintWarnings === 0;
-                
-                lintBody = `### ${getIcon(lintSuccess)} Lint Results
-                
-                | Metric | Count |
-                |--------|-------|
-                | **Errors** | ${lintErrors} |
-                | **Warnings** | ${lintWarnings} |`;
-                
+                const errorColor = lintErrors > 0 ? '🔴' : '🟢';
+                const warningColor = lintWarnings > 0 ? '🟡' : '🟢';
+                lintBody = '## ' + getIcon(lintSuccess) + ' Lint Results\n\n| Metric | Count |\n|--------|-------|\n| ' + errorColor + ' Errors | ' + formatCount(lintErrors) + ' |\n| ' + warningColor + ' Warnings | ' + formatCount(lintWarnings) + ' |';
               } else {
-                lintBody = `### ⚠️ Lint Results\n\nLint results file not found (Command likely failed before writing output).`;
+                lintBody = '## ❌ Lint Results\n\n⚠️ Lint results file not found.';
                 lintSuccess = false;
               }
             } catch (error) {
-              lintBody = `### ⚠️ Lint Results\n\nError parsing lint results: ${error.message}`;
+              lintBody = '## ❌ Lint Results\n\n⚠️ Error: ' + error.message;
               lintSuccess = false;
             }
 
-            // --- Process Test Results ---
-            let testBody = '';
-            let testSuccess = false; // Default to false if file missing
-
+            let testSuccess = false, testBody = '';
             try {
               if (fs.existsSync('test-results.json')) {
                 const results = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
                 testSuccess = results.success;
-                
-                testBody = `### ${getIcon(testSuccess)} Test Results
-                
-                | Metric | Count |
-                |--------|-------|
-                | **Total** | ${results.numTotalTests} |
-                | **Passed** | ${results.numPassedTests} |
-                | **Failed** | ${results.numFailedTests} |
-                
-                <details>
-                <summary>Test Summary Details</summary>
-                
-                \`\`\`json
-                ${JSON.stringify({
+                const passedColor = results.numPassedTests === results.numTotalTests ? '🟢' : '🟡';
+                const failedColor = results.numFailedTests > 0 ? '🔴' : '🟢';
+                const suiteData = JSON.stringify({
                   numTotalTestSuites: results.numTotalTestSuites,
                   numPassedTestSuites: results.numPassedTestSuites,
                   numFailedTestSuites: results.numFailedTestSuites
-                }, null, 2)}
-                \`\`\`
-                </details>`;
+                }, null, 2);
+                testBody = '## ' + getIcon(testSuccess) + ' Test Results\n\n| Metric | Count |\n|--------|-------|\n| 📊 Total | ' + formatCount(results.numTotalTests) + ' |\n| ' + passedColor + ' Passed | ' + formatCount(results.numPassedTests) + ' |\n| ' + failedColor + ' Failed | ' + formatCount(results.numFailedTests) + ' |\n\n<details>\n<summary>📋 Test Suites</summary>\n\n```json\n' + suiteData + '\n```\n</details>';
               } else {
-                testBody = `### ⚠️ Test Results\n\nTest results file not found.`;
+                testBody = '## ❌ Test Results\n\n⚠️ Test results file not found.';
               }
             } catch (error) {
-              testBody = `### ⚠️ Test Results\n\nError parsing test results: ${error.message}`;
+              testBody = '## ❌ Test Results\n\n⚠️ Error: ' + error.message;
             }
 
-            // --- Post Comment ---
-            const finalBody = `${lintBody}\n\n---\n\n${testBody}`;
+            const finalBody = '### 🔍 Automated Code Quality Check\n\n' + lintBody + '\n\n---\n\n' + testBody;
             
             try {
               await github.rest.issues.createComment({
@@ -125,10 +95,9 @@ jobs:
                console.error("Failed to post comment: " + e.message);
             }
             
-            // --- Set Workflow Status ---
             if (!lintSuccess || !testSuccess) {
               const messages = [];
-              if (!lintSuccess) messages.push(`Linting failed (${lintErrors} errors, ${lintWarnings} warnings)`);
-              if (!testSuccess) messages.push(`Tests failed`);
+              if (!lintSuccess) messages.push('Linting failed (' + lintErrors + ' errors, ' + lintWarnings + ' warnings)');
+              if (!testSuccess) messages.push('Tests failed');
               core.setFailed(messages.join(', '));
             }
