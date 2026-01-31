@@ -61,9 +61,23 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-slate-800">{node.label}</h1>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
                   <Badge color="blue">{node.category}</Badge>
                   <span className="text-slate-400 text-sm font-mono">{node.id}</span>
+                  {(node.org || node.artifactId) && (
+                    <div className="flex items-center gap-3 text-sm text-slate-500">
+                      {node.org && (
+                        <span className="flex items-center gap-1">
+                          <span className="font-semibold">Org:</span> {node.org}
+                        </span>
+                      )}
+                      {node.artifactId && (
+                        <span className="flex items-center gap-1">
+                          <span className="font-semibold">Artifact:</span> {node.artifactId}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

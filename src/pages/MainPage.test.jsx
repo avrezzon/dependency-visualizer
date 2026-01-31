@@ -12,12 +12,12 @@ describe('MainPage', () => {
   it('renders initial nodes', () => {
     render(<MainPage />);
     // Check for a core node by test id
-    expect(screen.getByTestId('node-ext.models')).toBeInTheDocument();
+    expect(screen.getByTestId('node-core:ext-models')).toBeInTheDocument();
     // Check for a repo node by test id
-    expect(screen.getByTestId('node-repo-a')).toBeInTheDocument();
+    expect(screen.getByTestId('node-data:repo-a')).toBeInTheDocument();
     
     // We can also verify text content if needed
-    expect(screen.getByTestId('node-ext.models')).toHaveTextContent('ext.models');
+    expect(screen.getByTestId('node-core:ext-models')).toHaveTextContent('ext-models');
   });
 
   it('updates sidebar when a node is selected', () => {
@@ -27,14 +27,14 @@ describe('MainPage', () => {
     expect(screen.getByText(/Select a microservice or library/i)).toBeInTheDocument();
 
     // Click on 'ext.models'
-    const node = screen.getByTestId('node-ext.models');
+    const node = screen.getByTestId('node-core:ext-models');
     fireEvent.click(node);
 
     // Sidebar should now show details
     expect(screen.queryByText(/Select a microservice or library/i)).not.toBeInTheDocument();
     expect(screen.getByText('Release Management')).toBeInTheDocument();
     
-    const sidebarTitle = screen.getByRole('heading', { level: 2, name: 'ext.models' });
+    const sidebarTitle = screen.getByRole('heading', { level: 2, name: 'ext-models' });
     expect(sidebarTitle).toBeInTheDocument();
   });
 
@@ -42,7 +42,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select a node
-    const node = screen.getByTestId('node-ext.models');
+    const node = screen.getByTestId('node-core:ext-models');
     fireEvent.click(node);
 
     // Click 'Patch' button
@@ -63,7 +63,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select a node
-    const node = screen.getByTestId('node-ext.models');
+    const node = screen.getByTestId('node-core:ext-models');
     fireEvent.click(node);
 
     // Click 'Minor' button
@@ -83,7 +83,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select a node
-    const node = screen.getByTestId('node-ext.models');
+    const node = screen.getByTestId('node-core:ext-models');
     fireEvent.click(node);
 
     // Click 'Major' button
@@ -103,7 +103,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select Reader A which depends on common, repo-a, repo-c, repo-d
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     fireEvent.click(readerA);
 
     // Check that upstream dependencies section is visible
@@ -113,7 +113,7 @@ describe('MainPage', () => {
     const commonLibTexts = screen.getAllByText('common-lib');
     expect(commonLibTexts.length).toBeGreaterThan(0);
     
-    const repoATexts = screen.getAllByText('Repo A');
+    const repoATexts = screen.getAllByText('repo-a');
     expect(repoATexts.length).toBeGreaterThan(0);
   });
 
@@ -121,14 +121,14 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select common-lib which is used by multiple readers
-    const commonLib = screen.getByTestId('node-common');
+    const commonLib = screen.getByTestId('node-core:common-lib');
     fireEvent.click(commonLib);
 
     // Check that downstream dependencies section is visible
     expect(screen.getByText(/Used By/i)).toBeInTheDocument();
     
     // common is used by reader-a and other readers - use getAllByText since there are multiple
-    const readerATexts = screen.getAllByText('Reader A');
+    const readerATexts = screen.getAllByText('reader-a');
     expect(readerATexts.length).toBeGreaterThan(0);
   });
 
@@ -136,7 +136,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // First bump a core library version
-    const extModels = screen.getByTestId('node-ext.models');
+    const extModels = screen.getByTestId('node-core:ext-models');
     fireEvent.click(extModels);
     const patchBtn = screen.getByRole('button', { name: /Patch/i });
     fireEvent.click(patchBtn);
@@ -147,7 +147,7 @@ describe('MainPage', () => {
 
     // Now select an app that depends on ext.models (reader-a -> common -> ext.models)
     // Or select common directly to see the drift
-    const commonLib = screen.getByTestId('node-common');
+    const commonLib = screen.getByTestId('node-core:common-lib');
     fireEvent.click(commonLib);
     
     // The app still uses old version, so should show drift
@@ -163,7 +163,7 @@ describe('MainPage', () => {
     fireEvent.click(publishBtn);
 
     // Select reader-a to see if it shows dependency drift
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     fireEvent.click(readerA);
     
     // Should show Dependency Drift warning since it still uses old common version
@@ -175,7 +175,7 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Bump common version
-    const commonLib = screen.getByTestId('node-common');
+    const commonLib = screen.getByTestId('node-core:common-lib');
     fireEvent.click(commonLib);
     const minorBtn = screen.getByRole('button', { name: /Minor/i });
     fireEvent.click(minorBtn);
@@ -185,7 +185,7 @@ describe('MainPage', () => {
     fireEvent.click(publishBtn);
 
     // Select an app (reader-a)
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     fireEvent.click(readerA);
     
     // Check if rebuild button exists and click it
@@ -204,11 +204,11 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Hover over a node
-    const commonLib = screen.getByTestId('node-common');
+    const commonLib = screen.getByTestId('node-core:common-lib');
     fireEvent.mouseEnter(commonLib);
     
     // Related nodes should remain visible (not faded)
-    const readerA = screen.getByTestId('node-reader-a'); // depends on common
+    const readerA = screen.getByTestId('node-app:reader-a'); // depends on common
     expect(readerA).toHaveClass('opacity-100');
   });
 
@@ -216,11 +216,11 @@ describe('MainPage', () => {
     render(<MainPage />);
     
     // Select a node
-    const commonLib = screen.getByTestId('node-common');
+    const commonLib = screen.getByTestId('node-core:common-lib');
     fireEvent.click(commonLib);
     
     // Related nodes should be highlighted
-    const readerA = screen.getByTestId('node-reader-a');
+    const readerA = screen.getByTestId('node-app:reader-a');
     expect(readerA).toHaveClass('opacity-100');
     
     // Unrelated nodes would be faded if we had any (all are connected in our graph)

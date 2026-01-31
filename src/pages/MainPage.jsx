@@ -124,6 +124,7 @@ export default function MainPage() {
   const [hoveredNode, setHoveredNode] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDepData, setNewDepData] = useState({
+    name: '',
     org: '',
     artifactId: '',
     version: '1.0.0',
@@ -357,7 +358,12 @@ export default function MainPage() {
 
   const handleAddDependency = () => {
     // 1. Create new Node
-    const newId = newDepData.name.toLowerCase().replace(/\s+/g, '-');
+    let newId;
+    if (newDepData.org && newDepData.artifactId) {
+      newId = `${newDepData.org}:${newDepData.artifactId}`.toLowerCase();
+    } else {
+      newId = newDepData.name.toLowerCase().replace(/\s+/g, '-');
+    }
 
     // Check for duplicate ID
     if (nodes.some(n => n.id === newId)) {
@@ -368,6 +374,8 @@ export default function MainPage() {
     const newNode = {
       id: newId,
       label: newDepData.name,
+      org: newDepData.org,
+      artifactId: newDepData.artifactId,
       type: newDepData.category === 'Foundation' ? 'core' : 'repo',
       version: newDepData.version,
       category: newDepData.category
@@ -401,6 +409,8 @@ export default function MainPage() {
     setIsAddModalOpen(false);
     setNewDepData({
       name: '',
+      org: '',
+      artifactId: '',
       version: '1.0.0',
       category: 'Foundation',
       consumers: []
@@ -506,13 +516,21 @@ export default function MainPage() {
                            <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-slate-300" />
                         )}
 
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            {getIcon(node.type)}
-                            <span className="font-semibold text-sm">{node.label}</span>
+                        <div className="flex flex-col mb-2">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2">
+                              {getIcon(node.type)}
+                              <span className="font-semibold text-sm">{node.label}</span>
+                            </div>
+                            {status.isOutdated && (
+                              <AlertCircle className="w-4 h-4 text-amber-500 animate-pulse" />
+                            )}
                           </div>
-                          {status.isOutdated && (
-                            <AlertCircle className="w-4 h-4 text-amber-500 animate-pulse" />
+                          {(node.org || node.artifactId) && (
+                            <div className="mt-1 text-[10px] text-slate-500 font-mono pl-7">
+                              {node.org && <span>{node.org} / </span>}
+                              {node.artifactId && <span>{node.artifactId}</span>}
+                            </div>
                           )}
                         </div>
 
@@ -715,7 +733,7 @@ export default function MainPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Dependency Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
                 <input
                   type="text"
                   value={newDepData.name}
@@ -723,6 +741,29 @@ export default function MainPage() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. auth-service"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
+                  <input
+                    type="text"
+                    value={newDepData.org}
+                    onChange={e => setNewDepData({...newDepData, org: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. my-org"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
+                  <input
+                    type="text"
+                    value={newDepData.artifactId}
+                    onChange={e => setNewDepData({...newDepData, artifactId: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. my-artifact"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
