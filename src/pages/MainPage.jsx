@@ -19,59 +19,59 @@ import DependencyDetails from '../components/DependencyDetails';
 
 const INITIAL_NODES = [
   // Core
-  { id: 'ext.models', label: 'ext.models', type: 'core', version: '1.0.0', category: 'Foundation' },
-  { id: 'common', label: 'common-lib', type: 'core', version: '1.0.0', category: 'Foundation' },
+  { id: 'core:ext-models', org: 'core', artifactId: 'ext-models', label: 'ext-models', type: 'core', version: '1.0.0', category: 'Foundation' },
+  { id: 'core:common-lib', org: 'core', artifactId: 'common-lib', label: 'common-lib', type: 'core', version: '1.0.0', category: 'Foundation' },
 
   // Repositories
-  { id: 'repo-a', label: 'Repo A', type: 'repo', version: '1.0.0', category: 'Data Access' },
-  { id: 'repo-b', label: 'Repo B', type: 'repo', version: '1.0.0', category: 'Data Access' },
-  { id: 'repo-c', label: 'Repo C', type: 'repo', version: '1.0.0', category: 'Data Access' },
-  { id: 'repo-d', label: 'Repo D', type: 'repo', version: '1.0.0', category: 'Data Access' },
-  { id: 'repo-e', label: 'Repo E', type: 'repo', version: '1.0.0', category: 'Data Access' },
+  { id: 'data:repo-a', org: 'data', artifactId: 'repo-a', label: 'repo-a', type: 'repo', version: '1.0.0', category: 'Data Access' },
+  { id: 'data:repo-b', org: 'data', artifactId: 'repo-b', label: 'repo-b', type: 'repo', version: '1.0.0', category: 'Data Access' },
+  { id: 'data:repo-c', org: 'data', artifactId: 'repo-c', label: 'repo-c', type: 'repo', version: '1.0.0', category: 'Data Access' },
+  { id: 'data:repo-d', org: 'data', artifactId: 'repo-d', label: 'repo-d', type: 'repo', version: '1.0.0', category: 'Data Access' },
+  { id: 'data:repo-e', org: 'data', artifactId: 'repo-e', label: 'repo-e', type: 'repo', version: '1.0.0', category: 'Data Access' },
 
   // Readers
-  { id: 'reader-a', label: 'Reader A', type: 'app', version: '2.1.0', category: 'Readers' },
-  { id: 'reader-b', label: 'Reader B', type: 'app', version: '2.0.4', category: 'Readers' },
-  { id: 'reader-c', label: 'Reader C', type: 'app', version: '2.1.1', category: 'Readers' },
+  { id: 'app:reader-a', org: 'app', artifactId: 'reader-a', label: 'reader-a', type: 'app', version: '2.1.0', category: 'Readers' },
+  { id: 'app:reader-b', org: 'app', artifactId: 'reader-b', label: 'reader-b', type: 'app', version: '2.0.4', category: 'Readers' },
+  { id: 'app:reader-c', org: 'app', artifactId: 'reader-c', label: 'reader-c', type: 'app', version: '2.1.1', category: 'Readers' },
 
   // Processors (Assumed dependencies based on prompt pattern)
-  { id: 'proc-a', label: 'Processor A', type: 'app', version: '1.5.0', category: 'Processors' },
-  { id: 'proc-b', label: 'Processor B', type: 'app', version: '1.2.0', category: 'Processors' },
+  { id: 'app:proc-a', org: 'app', artifactId: 'proc-a', label: 'proc-a', type: 'app', version: '1.5.0', category: 'Processors' },
+  { id: 'app:proc-b', org: 'app', artifactId: 'proc-b', label: 'proc-b', type: 'app', version: '1.2.0', category: 'Processors' },
 ];
 
 const INITIAL_EDGES = [
   // Chain: ext.models -> common
-  { source: 'ext.models', target: 'common' },
+  { source: 'core:ext-models', target: 'core:common-lib' },
 
   // Common -> Apps
-  { source: 'common', target: 'reader-a' },
-  { source: 'common', target: 'reader-b' },
-  { source: 'common', target: 'reader-c' },
-  { source: 'common', target: 'proc-a' },
-  { source: 'common', target: 'proc-b' },
+  { source: 'core:common-lib', target: 'app:reader-a' },
+  { source: 'core:common-lib', target: 'app:reader-b' },
+  { source: 'core:common-lib', target: 'app:reader-c' },
+  { source: 'core:common-lib', target: 'app:proc-a' },
+  { source: 'core:common-lib', target: 'app:proc-b' },
 
   // Repos -> Reader A (A, C, D)
-  { source: 'repo-a', target: 'reader-a' },
-  { source: 'repo-c', target: 'reader-a' },
-  { source: 'repo-d', target: 'reader-a' },
+  { source: 'data:repo-a', target: 'app:reader-a' },
+  { source: 'data:repo-c', target: 'app:reader-a' },
+  { source: 'data:repo-d', target: 'app:reader-a' },
 
   // Repos -> Reader B (B, C, E)
-  { source: 'repo-b', target: 'reader-b' },
-  { source: 'repo-c', target: 'reader-b' },
-  { source: 'repo-e', target: 'reader-b' },
+  { source: 'data:repo-b', target: 'app:reader-b' },
+  { source: 'data:repo-c', target: 'app:reader-b' },
+  { source: 'data:repo-e', target: 'app:reader-b' },
 
   // Repos -> Reader C (A, D, E)
-  { source: 'repo-a', target: 'reader-c' },
-  { source: 'repo-d', target: 'reader-c' },
-  { source: 'repo-e', target: 'reader-c' },
+  { source: 'data:repo-a', target: 'app:reader-c' },
+  { source: 'data:repo-d', target: 'app:reader-c' },
+  { source: 'data:repo-e', target: 'app:reader-c' },
 
   // Repos -> Processor A (Simulated: A, B)
-  { source: 'repo-a', target: 'proc-a' },
-  { source: 'repo-b', target: 'proc-a' },
+  { source: 'data:repo-a', target: 'app:proc-a' },
+  { source: 'data:repo-b', target: 'app:proc-a' },
 
   // Repos -> Processor B (Simulated: C, D)
-  { source: 'repo-c', target: 'proc-b' },
-  { source: 'repo-d', target: 'proc-b' },
+  { source: 'data:repo-c', target: 'app:proc-b' },
+  { source: 'data:repo-d', target: 'app:proc-b' },
 ];
 
 // --- Utilities ---
@@ -124,7 +124,8 @@ export default function MainPage() {
   const [hoveredNode, setHoveredNode] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDepData, setNewDepData] = useState({
-    name: '',
+    org: '',
+    artifactId: '',
     version: '1.0.0',
     category: 'Foundation',
     consumers: []
