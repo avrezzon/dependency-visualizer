@@ -480,6 +480,10 @@ export default function MainPage() {
                         key={node.id}
                         data-testid={`node-${node.id}`}
                         onClick={() => setSelectedNode(node.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedNode(node.id); } }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${node.label} version ${node.version}, ${node.category} dependency`}
                         onMouseEnter={() => setHoveredNode(node.id)}
                         onMouseLeave={() => setHoveredNode(null)}
                         className={`
@@ -550,6 +554,7 @@ export default function MainPage() {
                                onClick={() => setShowDeleteConfirm(true)}
                                className="text-slate-400 hover:text-red-500 transition-colors"
                                title="Delete Dependency"
+                               aria-label="Delete Dependency"
                              >
                                <Trash2 className="w-4 h-4" />
                              </button>
@@ -634,7 +639,14 @@ export default function MainPage() {
                               {upstream.map(uid => {
                                 const upNode = nodesMap.get(uid);
                                 return (
-                                  <div key={uid} onClick={() => setSelectedNode(uid)} className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group">
+                                  <div
+                                    key={uid}
+                                    onClick={() => setSelectedNode(uid)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedNode(uid); } }}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
+                                  >
                                     <div className="flex items-center gap-2">
                                       {getIcon(upNode.type)}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{upNode.label}</span>
@@ -659,7 +671,14 @@ export default function MainPage() {
                               {downstream.map(did => {
                                 const downNode = nodesMap.get(did);
                                 return (
-                                  <div key={did} onClick={() => setSelectedNode(did)} className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group">
+                                  <div
+                                    key={did}
+                                    onClick={() => setSelectedNode(did)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedNode(did); } }}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
+                                  >
                                     <div className="flex items-center gap-2">
                                       {getIcon(downNode.type)}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{downNode.label}</span>
@@ -688,7 +707,7 @@ export default function MainPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800">Add New Dependency</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close modal">
                 <X className="w-5 h-5" />
               </button>
             </div>

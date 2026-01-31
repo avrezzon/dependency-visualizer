@@ -25,7 +25,7 @@ describe('App - Add Dependency', () => {
 
     // Select Consumer (e.g. Reader A)
     // The consumer list uses checkboxes. The label contains "Reader A".
-    const consumerCheckbox = screen.getByLabelText(/Reader A/i);
+    const consumerCheckbox = screen.getByRole('checkbox', { name: /Reader A/i });
     fireEvent.click(consumerCheckbox);
 
     // Submit

@@ -95,6 +95,9 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                       <div
                         key={uid}
                         onClick={() => onNodeSelect(uid)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNodeSelect(uid); } }}
+                        role="button"
+                        tabIndex={0}
                         className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 cursor-pointer transition-colors hover:bg-slate-100"
                       >
                         <div className="flex items-center gap-3">
@@ -125,6 +128,9 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                       <div
                         key={did}
                         onClick={() => onNodeSelect(did)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNodeSelect(did); } }}
+                        role="button"
+                        tabIndex={0}
                         className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 cursor-pointer transition-colors hover:bg-slate-100"
                       >
                         <div className="flex items-center gap-3">
