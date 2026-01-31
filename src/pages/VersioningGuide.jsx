@@ -172,7 +172,7 @@ public class UserController {
               <div>
                 <h4 className="font-bold text-slate-800">Development Builds</h4>
                 <p className="text-sm mt-1">
-                  Represents the "latest work in progress" for the <i>next</i> version.
+                  Represents the &quot;latest work in progress&quot; for the <i>next</i> version.
                   Snapshots are mutable; downloading <code>1.1.0-SNAPSHOT</code> today might give different code than yesterday.
                   <b>Never use SNAPSHOT dependencies in production.</b>
                 </p>
