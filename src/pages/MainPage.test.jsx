@@ -1,16 +1,16 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import App from './App';
+import MainPage from './MainPage';
 
-describe('App', () => {
+describe('MainPage', () => {
   it('renders the header correctly', () => {
-    render(<App />);
+    render(<MainPage />);
     expect(screen.getByText(/DepManager/i)).toBeInTheDocument();
     expect(screen.getByText(/Microservice Version Control/i)).toBeInTheDocument();
   });
 
   it('renders initial nodes', () => {
-    render(<App />);
+    render(<MainPage />);
     // Check for a core node by test id
     expect(screen.getByTestId('node-ext.models')).toBeInTheDocument();
     // Check for a repo node by test id
@@ -21,7 +21,7 @@ describe('App', () => {
   });
 
   it('updates sidebar when a node is selected', () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Initial state: empty sidebar message
     expect(screen.getByText(/Select a microservice or library/i)).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('App', () => {
   });
 
   it('bumps version when Patch button is clicked', async () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select a node
     const node = screen.getByTestId('node-ext.models');
@@ -60,7 +60,7 @@ describe('App', () => {
   });
 
   it('bumps minor version when Minor button is clicked', async () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select a node
     const node = screen.getByTestId('node-ext.models');
@@ -80,7 +80,7 @@ describe('App', () => {
   });
 
   it('bumps major version when Major button is clicked', async () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select a node
     const node = screen.getByTestId('node-ext.models');
@@ -100,7 +100,7 @@ describe('App', () => {
   });
 
   it('shows upstream dependencies for a selected node', () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select Reader A which depends on common, repo-a, repo-c, repo-d
     const readerA = screen.getByTestId('node-reader-a');
@@ -118,7 +118,7 @@ describe('App', () => {
   });
 
   it('shows downstream dependencies for a selected node', () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select common-lib which is used by multiple readers
     const commonLib = screen.getByTestId('node-common');
@@ -133,7 +133,7 @@ describe('App', () => {
   });
 
   it('detects dependency drift and shows Rebuild & Bump App button', async () => {
-    render(<App />);
+    render(<MainPage />);
     
     // First bump a core library version
     const extModels = screen.getByTestId('node-ext.models');
@@ -172,7 +172,7 @@ describe('App', () => {
   });
 
   it('updates app dependencies when Rebuild & Bump App is clicked', async () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Bump common version
     const commonLib = screen.getByTestId('node-common');
@@ -201,7 +201,7 @@ describe('App', () => {
   });
 
   it('highlights related nodes on hover', () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Hover over a node
     const commonLib = screen.getByTestId('node-common');
@@ -213,7 +213,7 @@ describe('App', () => {
   });
 
   it('highlights related nodes on selection', () => {
-    render(<App />);
+    render(<MainPage />);
     
     // Select a node
     const commonLib = screen.getByTestId('node-common');
