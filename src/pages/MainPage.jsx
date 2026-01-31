@@ -8,9 +8,12 @@ import {
   Cpu,
   Activity,
   RefreshCw,
+  Plus,
+  X,
   Trash2
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import DependencyDetails from '../components/DependencyDetails';
 
 // --- Configuration & Initial Data ---
 
@@ -116,8 +119,16 @@ const Badge = ({ children, color = "slate" }) => {
 export default function MainPage() {
   const [nodes, setNodes] = useState(INITIAL_NODES);
   const [edges, setEdges] = useState(INITIAL_EDGES);
+  const [view, setView] = useState('dashboard');
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newDepData, setNewDepData] = useState({
+    name: '',
+    version: '1.0.0',
+    category: 'Foundation',
+    consumers: []
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Release Management State
@@ -231,11 +242,15 @@ export default function MainPage() {
         return {
           ...n,
           version: releaseForm.version,
-          latestRelease: {
-            prLink: releaseForm.prLink,
-            changelog: releaseForm.changelog,
-            date: new Date().toISOString()
-          }
+          history: [
+            ...(n.history || []),
+            {
+              version: releaseForm.version,
+              prLink: releaseForm.prLink,
+              changelog: releaseForm.changelog,
+              date: new Date().toISOString()
+            }
+          ]
         };
       }
       return n;
@@ -299,6 +314,76 @@ export default function MainPage() {
 
   const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
 
+  const handleAddDependency = () => {
+    // 1. Create new Node
+    const newId = newDepData.name.toLowerCase().replace(/\s+/g, '-');
+
+    // Check for duplicate ID
+    if (nodes.some(n => n.id === newId)) {
+      alert('A dependency with this ID already exists.');
+      return;
+    }
+
+    const newNode = {
+      id: newId,
+      label: newDepData.name,
+      type: newDepData.category === 'Foundation' ? 'core' : 'repo',
+      version: newDepData.version,
+      category: newDepData.category
+    };
+
+    setNodes(prev => [...prev, newNode]);
+
+    // 2. Create Edges
+    const newEdges = newDepData.consumers.map(consumerId => ({
+      source: newId,
+      target: consumerId
+    }));
+
+    setEdges(prev => [...prev, ...newEdges]);
+
+    // 3. Update App Dependencies (record that apps use this new version)
+    setAppDependencies(prev => {
+      const next = { ...prev };
+      newDepData.consumers.forEach(consumerId => {
+        // Only update if the consumer is an app (tracked in appDependencies)
+        if (next[consumerId]) {
+          next[consumerId] = {
+            ...next[consumerId],
+            [newId]: newDepData.version
+          };
+        }
+      });
+      return next;
+    });
+
+    // Reset and Close
+    setIsAddModalOpen(false);
+    setNewDepData({
+      name: '',
+      version: '1.0.0',
+      category: 'Foundation',
+      consumers: []
+    });
+  };
+
+  if (view === 'details' && selectedNode) {
+    const node = nodesMap.get(selectedNode);
+    if (node) {
+      const upstream = connections.upstream[node.id] || [];
+      const downstream = connections.downstream[node.id] || [];
+      return (
+        <DependencyDetails
+          node={node}
+          onBack={() => setView('dashboard')}
+          upstreamIds={upstream}
+          downstreamIds={downstream}
+          nodesMap={nodesMap}
+        />
+      );
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -312,15 +397,24 @@ export default function MainPage() {
             </h1>
             <p className="text-slate-500 mt-1">Visualize dependency chains and manage release consistency.</p>
           </div>
-          <div className="flex gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-slate-300"></span> Stable
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Outdated Deps
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Selected
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition-colors text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Add Dependency
+            </button>
+            <div className="flex gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-300"></span> Stable
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span> Outdated Deps
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Selected
+              </div>
             </div>
           </div>
         </header>
@@ -431,6 +525,15 @@ export default function MainPage() {
 
                       {/* Actions */}
                       <div className="space-y-4 mb-8">
+                        {node.history && node.history.length > 0 && (
+                          <button
+                            onClick={() => setView('details')}
+                            className="w-full py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                          >
+                            <Box className="w-4 h-4" />
+                            View Version History
+                          </button>
+                        )}
                         <div className="text-sm font-medium text-slate-700">Release Management</div>
                         <div className="grid grid-cols-3 gap-2">
                           <button
@@ -539,6 +642,95 @@ export default function MainPage() {
         </div>
       </div>
 
+      {/* Add Dependency Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800">Add New Dependency</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Dependency Name</label>
+                <input
+                  type="text"
+                  value={newDepData.name}
+                  onChange={e => setNewDepData({...newDepData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. auth-service"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Version</label>
+                  <input
+                    type="text"
+                    value={newDepData.version}
+                    onChange={e => setNewDepData({...newDepData, version: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="1.0.0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                  <select
+                    value={newDepData.category}
+                    onChange={e => setNewDepData({...newDepData, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</label>
+                <div className="border border-slate-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
+                  {nodes.map(node => (
+                    <label key={node.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newDepData.consumers.includes(node.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setNewDepData(prev => ({...prev, consumers: [...prev.consumers, node.id]}));
+                          } else {
+                            setNewDepData(prev => ({...prev, consumers: prev.consumers.filter(id => id !== node.id)}));
+                          }
+                        }}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-slate-700">{node.label}</span>
+                      <span className="text-xs text-slate-400 ml-auto">({node.type})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDependency}
+                  disabled={!newDepData.name}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Dependency
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
