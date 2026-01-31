@@ -136,6 +136,12 @@ export default function App() {
     return deps;
   });
 
+  // Create a map of nodes keyed by ID for O(1) lookups
+  const nodesMap = useMemo(() => 
+    new Map(nodes.map(node => [node.id, node])),
+    [nodes]
+  );
+
   // Calculate connections
   const connections = useMemo(() => {
     const downstream = {}; // Key: Source, Value: [Targets]
@@ -160,7 +166,7 @@ export default function App() {
         const outliers = [];
         
         Object.entries(myDeps).forEach(([depId, recordedVersion]) => {
-          const actualDep = nodes.find(n => n.id === depId);
+          const actualDep = nodesMap.get(depId);
           if (actualDep && actualDep.version !== recordedVersion) {
             outliers.push({
               name: actualDep.label,
@@ -179,7 +185,7 @@ export default function App() {
       }
     });
     return status;
-  }, [nodes, appDependencies]);
+  }, [nodes, appDependencies, nodesMap]);
 
   // Handle version bump
   const handleBump = (nodeId, type) => {
@@ -200,7 +206,7 @@ export default function App() {
       // Look up all sources for this app
       const sources = connections.upstream[appId] || [];
       sources.forEach(sourceId => {
-        const sourceNode = nodes.find(n => n.id === sourceId);
+        const sourceNode = nodesMap.get(sourceId);
         if (sourceNode) {
           newDeps[appId][sourceId] = sourceNode.version;
         }
@@ -212,31 +218,36 @@ export default function App() {
     handleBump(appId, 'patch');
   };
 
-  // Helper to check if a node is in the dependency chain of the hovered/selected node
-  const isRelated = (targetId) => {
+  // Compute related nodes once per hover/select change for O(1) lookup during render
+  const relatedNodesSet = useMemo(() => {
     const rootId = hoveredNode || selectedNode;
-    if (!rootId) return false;
-    if (rootId === targetId) return true;
+    if (!rootId) return null; // Return null to indicate no filter
 
-    // Check direct or indirect connections
-    // Simple BFS for upstream/downstream relative to root
-    const checkDeep = (start, direction) => {
+    const related = new Set();
+    
+    const traverse = (start, direction) => {
       const queue = [start];
-      const visited = new Set();
-      while (queue.length > 0) {
+      const visited = new Set([start]);
+      related.add(start);
+
+      while(queue.length > 0) {
         const current = queue.shift();
-        if (current === targetId) return true;
-        if (!visited.has(current)) {
-          visited.add(current);
-          const neighbors = connections[direction][current] || [];
-          queue.push(...neighbors);
+        const neighbors = connections[direction][current] || [];
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            related.add(neighbor);
+            queue.push(neighbor);
+          }
         }
       }
-      return false;
     };
 
-    return checkDeep(rootId, 'downstream') || checkDeep(rootId, 'upstream');
-  };
+    traverse(rootId, 'downstream');
+    traverse(rootId, 'upstream');
+    
+    return related;
+  }, [hoveredNode, selectedNode, connections]);
 
   const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
 
@@ -278,7 +289,7 @@ export default function App() {
                   </div>
                   
                   {nodes.filter(n => n.category === cat).map(node => {
-                    const isHighlighted = (hoveredNode || selectedNode) ? isRelated(node.id) : true;
+                    const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
                     const status = statusMap[node.id];
                     
@@ -421,7 +432,7 @@ export default function App() {
                           ) : (
                             <div className="space-y-2">
                               {upstream.map(uid => {
-                                const upNode = nodes.find(n => n.id === uid);
+                                const upNode = nodesMap.get(uid);
                                 return (
                                   <div key={uid} onClick={() => setSelectedNode(uid)} className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group">
                                     <div className="flex items-center gap-2">
@@ -446,7 +457,7 @@ export default function App() {
                           ) : (
                             <div className="space-y-2">
                               {downstream.map(did => {
-                                const downNode = nodes.find(n => n.id === did);
+                                const downNode = nodesMap.get(did);
                                 return (
                                   <div key={did} onClick={() => setSelectedNode(did)} className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group">
                                     <div className="flex items-center gap-2">
