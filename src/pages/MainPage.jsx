@@ -601,22 +601,28 @@ export default function MainPage() {
                         <div className="text-sm font-medium text-slate-700">Release Management</div>
                         <div className="grid grid-cols-3 gap-2">
                           <button
-                            onClick={() => handleBump(node.id, 'patch')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                            onClick={() => handleBump(node.id, 'major')}
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
+                            title={`Perform a major version increment (${node.version} -> ${bumpString(node.version, 'major')})`}
                           >
-                            Patch
+                            <span>Major</span>
+                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'major')}</span>
                           </button>
                           <button
                             onClick={() => handleBump(node.id, 'minor')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
+                            title={`Perform a minor version increment (${node.version} -> ${bumpString(node.version, 'minor')})`}
                           >
-                            Minor
+                            <span>Minor</span>
+                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'minor')}</span>
                           </button>
                           <button
-                            onClick={() => handleBump(node.id, 'major')}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                            onClick={() => handleBump(node.id, 'patch')}
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex flex-col items-center"
+                            title={`Perform a patch version increment (${node.version} -> ${bumpString(node.version, 'patch')})`}
                           >
-                            Major
+                            <span>Patch</span>
+                            <span className="font-mono text-indigo-600 text-[10px]">v{bumpString(node.version, 'patch')}</span>
                           </button>
                         </div>
 
