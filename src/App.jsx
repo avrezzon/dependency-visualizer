@@ -289,6 +289,7 @@ export default function App() {
                     return (
                       <div
                         key={node.id}
+                        data-testid={`node-${node.id}`}
                         onClick={() => setSelectedNode(node.id)}
                         onMouseEnter={() => setHoveredNode(node.id)}
                         onMouseLeave={() => setHoveredNode(null)}
