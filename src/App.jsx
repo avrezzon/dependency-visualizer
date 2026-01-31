@@ -137,21 +137,19 @@ export default function App() {
   // Track which dependencies the apps are currently "using". 
   // In a real app, this would be in a lockfile. Here, we simulate that apps store 
   // a record of what version of a dependency they are built against.
-  const [appDependencies, setAppDependencies] = useState(() => {
-    const deps = {};
+  const [dependencyLocks, setDependencyLocks] = useState(() => {
+    const locks = {};
     INITIAL_NODES.forEach(n => {
-      if (n.type === 'app') {
-        deps[n.id] = {};
-        // Initialize apps to use the current version of their upstream dependencies
-        INITIAL_EDGES.filter(e => e.target === n.id).forEach(e => {
-          const upstreamNode = INITIAL_NODES.find(un => un.id === e.source);
-          if (upstreamNode) {
-            deps[n.id][upstreamNode.id] = upstreamNode.version;
-          }
-        });
-      }
+      // Every node can have dependencies, so we initialize locks for all.
+      locks[n.id] = {};
+      INITIAL_EDGES.filter(e => e.target === n.id).forEach(e => {
+        const upstreamNode = INITIAL_NODES.find(un => un.id === e.source);
+        if (upstreamNode) {
+          locks[n.id][upstreamNode.id] = upstreamNode.version;
+        }
+      });
     });
-    return deps;
+    return locks;
   });
 
   // Create a map of nodes keyed by ID for O(1) lookups
@@ -175,35 +173,63 @@ export default function App() {
     return { downstream, upstream };
   }, [edges]);
 
-  // Determine which apps are outdated
-  const statusMap = useMemo(() => {
-    const status = {};
-    nodes.forEach(node => {
-      if (node.type === 'app') {
-        const myDeps = appDependencies[node.id] || {};
-        const outliers = [];
-        
-        Object.entries(myDeps).forEach(([depId, recordedVersion]) => {
-          const actualDep = nodesMap.get(depId);
-          if (actualDep && actualDep.version !== recordedVersion) {
-            outliers.push({
-              name: actualDep.label,
-              current: actualDep.version,
-              using: recordedVersion
-            });
-          }
-        });
-        
-        status[node.id] = {
-          isOutdated: outliers.length > 0,
-          outliers
-        };
-      } else {
-        status[node.id] = { isOutdated: false, outliers: [] };
+  // Determine which nodes are outdated, including transitive dependencies
+  const outdatedNodes = useMemo(() => {
+    const outdated = {};
+    const memo = {}; // Memoization for checkNodeState
+
+    const checkNodeState = (nodeId) => {
+      if (memo.hasOwnProperty(nodeId)) return memo[nodeId];
+
+      const node = nodesMap.get(nodeId);
+      if (!node) {
+        return { isOutdated: false, outliers: [] };
       }
+
+      const directLocks = dependencyLocks[node.id] || {};
+      const directOutliers = [];
+
+      // Check direct dependencies
+      for (const [depId, lockedVersion] of Object.entries(directLocks)) {
+        const actualDep = nodesMap.get(depId);
+        if (actualDep && actualDep.version !== lockedVersion) {
+          directOutliers.push({
+            name: actualDep.label,
+            current: actualDep.version,
+            using: lockedVersion
+          });
+        }
+      }
+
+      // Recursively check upstream dependencies
+      const upstreamDeps = connections.upstream[node.id] || [];
+      let transitiveOutliers = [];
+      let isTransitivelyOutdated = false;
+
+      for (const depId of upstreamDeps) {
+        const depState = checkNodeState(depId);
+        if (depState.isOutdated) {
+          isTransitivelyOutdated = true;
+          // For simplicity, we can just flag that there *is* a transitive issue.
+          // A more complex UI could show the full chain.
+        }
+      }
+
+      const isOutdated = directOutliers.length > 0 || isTransitivelyOutdated;
+
+      // For the UI, we'll primarily show direct outliers, but the status reflects both.
+      // We can add a flag for transitive issues if needed.
+      const result = { isOutdated, outliers: directOutliers, isTransitivelyOutdated };
+      memo[nodeId] = result;
+      return result;
+    };
+
+    nodes.forEach(node => {
+      outdated[node.id] = checkNodeState(node.id);
     });
-    return status;
-  }, [nodes, appDependencies, nodesMap]);
+
+    return outdated;
+  }, [nodes, dependencyLocks, connections, nodesMap]);
 
   // Handle delete node
   const handleDeleteNode = () => {
@@ -255,24 +281,25 @@ export default function App() {
   };
 
   // Handle "Updating" an app (rebuilding it with latest deps)
-  const handleUpdateApp = (appId) => {
-    setAppDependencies(prev => {
-      const newDeps = { ...prev };
-      newDeps[appId] = {};
+  const handleRebuildNode = (nodeId) => {
+    setDependencyLocks(prev => {
+      const newLocks = { ...prev };
+      const directUpstream = connections.upstream[nodeId] || [];
       
-      // Look up all sources for this app
-      const sources = connections.upstream[appId] || [];
-      sources.forEach(sourceId => {
-        const sourceNode = nodesMap.get(sourceId);
-        if (sourceNode) {
-          newDeps[appId][sourceId] = sourceNode.version;
+      const currentNodeLocks = {};
+      directUpstream.forEach(depId => {
+        const depNode = nodesMap.get(depId);
+        if(depNode) {
+          currentNodeLocks[depId] = depNode.version;
         }
       });
-      return newDeps;
+      newLocks[nodeId] = currentNodeLocks;
+
+      return newLocks;
     });
     
-    // Also bump the app version itself because its code changed
-    handleBump(appId, 'patch');
+    // Also bump the node version itself because its code changed
+    handleBump(nodeId, 'patch');
   };
 
   // Compute related nodes once per hover/select change for O(1) lookup during render
@@ -337,17 +364,17 @@ export default function App() {
     setEdges(prev => [...prev, ...newEdges]);
 
     // 3. Update App Dependencies (record that apps use this new version)
-    setAppDependencies(prev => {
+    setDependencyLocks(prev => {
       const next = { ...prev };
       newDepData.consumers.forEach(consumerId => {
-        // Only update if the consumer is an app (tracked in appDependencies)
-        if (next[consumerId]) {
-          next[consumerId] = {
-            ...next[consumerId],
-            [newId]: newDepData.version
-          };
+        // Update any consumer's locks.
+        if (!next[consumerId]) {
+            next[consumerId] = {};
         }
+        next[consumerId][newId] = newDepData.version;
       });
+      // Also add the new node itself to the locks, with an empty dependency object.
+      next[newId] = {};
       return next;
     });
 
@@ -410,7 +437,7 @@ export default function App() {
                   {nodes.filter(n => n.category === cat).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = statusMap[node.id];
+                    const status = outdatedNodes[node.id];
                     
                     return (
                       <div
@@ -473,7 +500,7 @@ export default function App() {
               ) : (
                 (() => {
                   const node = nodes.find(n => n.id === selectedNode);
-                  const status = statusMap[node.id];
+                  const status = outdatedNodes[node.id];
                   const upstream = connections.upstream[node.id] || [];
                   const downstream = connections.downstream[node.id] || [];
 
@@ -538,11 +565,11 @@ export default function App() {
                               ))}
                             </div>
                             <button 
-                              onClick={() => handleUpdateApp(node.id)}
+                              onClick={() => handleRebuildNode(node.id)}
                               className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded shadow-sm text-xs font-bold flex items-center justify-center gap-2 transition-colors"
                             >
                               <RefreshCw className="w-3 h-3" />
-                              Rebuild & Bump App
+                              Rebuild & Bump Node
                             </button>
                           </div>
                         )}

@@ -167,11 +167,11 @@ describe('App', () => {
     fireEvent.click(readerA);
     
     // Should show Dependency Drift warning since it still uses old common version
-    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump App/i });
+    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump Node/i });
     expect(rebuildBtn).toBeInTheDocument();
   });
 
-  it('updates app dependencies when Rebuild & Bump App is clicked', async () => {
+  it('updates app dependencies when Rebuild & Bump Node is clicked', async () => {
     render(<App />);
     
     // Bump common version
@@ -189,7 +189,7 @@ describe('App', () => {
     fireEvent.click(readerA);
     
     // Check if rebuild button exists and click it
-    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump App/i });
+    const rebuildBtn = await screen.findByRole('button', { name: /Rebuild & Bump Node/i });
     fireEvent.click(rebuildBtn);
 
     // The rebuild triggers a bump, which opens the modal
