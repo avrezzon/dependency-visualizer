@@ -10,6 +10,7 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
+import { isValidUrl } from '../utils/security';
 
 const getIcon = (type) => {
   switch(type) {
@@ -189,7 +190,7 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                             {new Date(release.date).toLocaleDateString()}
                           </span>
                         </div>
-                        {release.prLink && (
+                        {isValidUrl(release.prLink) && (
                           <a
                             href={release.prLink}
                             target="_blank"
