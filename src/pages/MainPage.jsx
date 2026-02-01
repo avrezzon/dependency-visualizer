@@ -81,6 +81,8 @@ const INITIAL_EDGES = [
 
 // --- Utilities ---
 
+const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
+
 const getIcon = (type) => {
   switch(type) {
     case 'core': return <Box className="w-5 h-5 text-blue-500" />;
@@ -354,7 +356,19 @@ export default function MainPage() {
     return related;
   }, [hoveredNode, selectedNode, connections]);
 
-  const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
+  // OPTIMIZATION: Group nodes by category once (memoized) to avoid filtering
+  // the entire nodes array for every category during render.
+  // Reduces complexity from O(Nodes * Categories) to O(Nodes).
+  const nodesByCategory = useMemo(() => {
+    const groups = {};
+    categories.forEach(cat => { groups[cat] = []; });
+    nodes.forEach(node => {
+      if (groups[node.category]) {
+        groups[node.category].push(node);
+      }
+    });
+    return groups;
+  }, [nodes]);
 
   const handleAddDependency = () => {
     // 1. Create new Node
@@ -555,7 +569,7 @@ export default function MainPage() {
                     {cat}
                   </div>
 
-                  {nodes.filter(n => n.category === cat).map(node => {
+                  {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
                     const status = outdatedNodes[node.id];
