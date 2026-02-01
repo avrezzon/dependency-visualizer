@@ -17,6 +17,12 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-indigo-600 focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        Skip to main content
+      </a>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -49,7 +55,7 @@ export default function Navbar() {
             <button
               onClick={toggleMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-              aria-expanded="false"
+              aria-expanded={isOpen}
             >
               <span className="sr-only">Open main menu</span>
               {isOpen ? (
