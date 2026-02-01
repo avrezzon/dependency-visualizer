@@ -108,7 +108,7 @@ describe('MainPage', () => {
     fireEvent.click(readerA);
 
     // Check that upstream dependencies section is visible
-    expect(screen.getByText(/Requires/i)).toBeInTheDocument();
+    expect(screen.getByText(/Immediate Dependencies/i)).toBeInTheDocument();
     
     // Check for one of the upstream dependencies using getAllByText since there are multiple
     const commonLibTexts = screen.getAllByText('common-lib');
