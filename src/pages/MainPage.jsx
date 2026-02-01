@@ -90,6 +90,8 @@ const getIcon = (type) => {
   }
 };
 
+const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
+
 
 // --- Components ---
 
@@ -354,7 +356,18 @@ export default function MainPage() {
     return related;
   }, [hoveredNode, selectedNode, connections]);
 
-  const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
+  const nodesByCategory = useMemo(() => {
+    const groups = {};
+    categories.forEach(cat => {
+      groups[cat] = [];
+    });
+    nodes.forEach(node => {
+      if (groups[node.category]) {
+        groups[node.category].push(node);
+      }
+    });
+    return groups;
+  }, [nodes]);
 
   const handleAddDependency = () => {
     // 1. Create new Node
@@ -555,7 +568,7 @@ export default function MainPage() {
                     {cat}
                   </div>
 
-                  {nodes.filter(n => n.category === cat).map(node => {
+                  {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
                     const status = outdatedNodes[node.id];
