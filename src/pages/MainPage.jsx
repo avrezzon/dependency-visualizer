@@ -16,6 +16,7 @@ import {
 import Modal from '../components/Modal';
 import WelcomeModal from '../components/WelcomeModal';
 import DependencyDetails from '../components/DependencyDetails';
+import DependencyActions from '../components/DependencyActions';
 import VersionBumpButtons from '../components/VersionBumpButtons';
 import { bumpString } from '../utils/versioning';
 import { generateRandomGraph } from '../utils/randomGraph';
@@ -323,7 +324,69 @@ export default function MainPage() {
     handleBump(nodeId, 'patch');
   };
 
+  const handleNodeDeselect = () => {
+    setSelectedNode(null);
+  };
+
+  const handleUpdateDependencies = (nodeId, newUpstreamIds) => {
+    // 1. Update Edges
+    setEdges(prev => {
+      // Remove all old upstream edges for this node
+      const filtered = prev.filter(e => e.target !== nodeId);
+      // Add new edges from the new dependencies
+      const newEdges = newUpstreamIds.map(sourceId => ({
+        source: sourceId,
+        target: nodeId
+      }));
+      return [...filtered, ...newEdges];
+    });
+
+    // 2. Update Dependency Locks
+    setDependencyLocks(prev => {
+      const next = { ...prev };
+      const newLocks = {};
+      newUpstreamIds.forEach(sourceId => {
+        const sourceNode = nodesMap.get(sourceId);
+        if (sourceNode) {
+          newLocks[sourceId] = sourceNode.version;
+        }
+      });
+      next[nodeId] = newLocks;
+      return next;
+    });
+
+    // 3. (Optional) Re-bump the version since its dependencies changed
+    handleBump(nodeId, 'patch');
+  };
+
   // Compute related nodes once per hover/select change for O(1) lookup during render
+  const { directUpstream, transitiveUpstream } = useMemo(() => {
+    if (!selectedNode) return { directUpstream: [], transitiveUpstream: [] };
+
+    const direct = connections.upstream[selectedNode] || [];
+    const transitive = new Set();
+    const queue = [...direct];
+    const visited = new Set(direct);
+    visited.add(selectedNode); // Don't include the node itself
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const neighbors = connections.upstream[current] || [];
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          transitive.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    return {
+      directUpstream: direct,
+      transitiveUpstream: Array.from(transitive)
+    };
+  }, [selectedNode, connections]);
+
   const relatedNodesSet = useMemo(() => {
     const rootId = hoveredNode || selectedNode;
     if (!rootId) return null; // Return null to indicate no filter
@@ -547,10 +610,20 @@ export default function MainPage() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
           {/* Main Visualization Board */}
-          <Card className="xl:col-span-3 p-4 sm:p-6 min-h-[600px] overflow-x-auto">
+          <Card className="xl:col-span-3 p-4 sm:p-6 min-h-[600px] overflow-x-auto relative">
+            {/* Overlay to deselect node */}
+            {selectedNode && (
+              <div
+                onClick={handleNodeDeselect}
+                role="button"
+                aria-label="Deselect Node"
+                tabIndex={-1} // Not focusable, just for clicking
+                className="absolute inset-0 bg-black/10 z-10 cursor-pointer"
+              />
+            )}
             <div className="flex flex-col xl:flex-row justify-between xl:min-w-[800px] h-full gap-8">
               {categories.map((cat) => (
-                <div key={cat} className="flex-1 flex flex-col gap-4 relative xl:border-none border-b border-slate-200 xl:pb-0 pb-8 last:border-b-0">
+                <div key={cat} className="flex-1 flex flex-col gap-4 relative xl:border-none border-b border-slate-200 xl:pb-0 pb-8 last:border-b-0 z-20">
                   <div className="text-xs uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-200 pb-2 mb-2">
                     {cat}
                   </div>
@@ -699,18 +772,25 @@ export default function MainPage() {
                         )}
                       </div>
 
+                      <DependencyActions
+                        selectedNode={node}
+                        allNodes={nodes}
+                        upstreamConnections={upstream}
+                        onUpdateDependencies={handleUpdateDependencies}
+                      />
+
                       {/* Dependency Lists */}
                       <div className="space-y-6">
-                        {/* Upstream */}
+                        {/* -- Immediate Dependencies -- */}
                         <div>
                           <h3 className="text-xs uppercase text-slate-400 font-bold mb-3 flex items-center gap-2">
-                            <ArrowRight className="w-3 h-3 rotate-180" /> Requires ({upstream.length})
+                            Immediate Dependencies ({directUpstream.length})
                           </h3>
-                          {upstream.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic">No upstream dependencies</p>
+                          {directUpstream.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic">No immediate dependencies</p>
                           ) : (
                             <div className="space-y-2">
-                              {upstream.map(uid => {
+                              {directUpstream.map(uid => {
                                 const upNode = nodesMap.get(uid);
                                 return (
                                   <div
@@ -732,6 +812,39 @@ export default function MainPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* -- Transitive Dependencies -- */}
+                        <div>
+                          <h3 className="text-xs uppercase text-slate-400 font-bold mb-3 flex items-center gap-2">
+                            Transitive Dependencies ({transitiveUpstream.length})
+                          </h3>
+                          {transitiveUpstream.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic">No transitive dependencies</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {transitiveUpstream.map(uid => {
+                                const upNode = nodesMap.get(uid);
+                                return (
+                                  <div
+                                    key={uid}
+                                    onClick={() => setSelectedNode(uid)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedNode(uid); } }}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
+                                  >
+                                    <div className="flex items-center gap-2 opacity-70">
+                                      {getIcon(upNode.type)}
+                                      <span className="text-sm text-slate-500 group-hover:text-indigo-600">{upNode.label}</span>
+                                    </div>
+                                    <Badge color="slate">v{upNode.version}</Badge>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+
 
                         {/* Downstream */}
                         <div>
