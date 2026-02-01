@@ -509,31 +509,33 @@ export default function MainPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
               <Layers className="text-indigo-600" />
-              DepManager <span className="text-slate-400 font-light">Microservice Version Control</span>
+              DepManager <span className="text-slate-400 font-light hidden sm:inline">Microservice Version Control</span>
             </h1>
             <p className="text-slate-500 mt-1">Visualize dependency chains and manage release consistency.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
              <button
               onClick={handleDownloadSession}
               className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg shadow-sm hover:bg-slate-700 transition-colors text-sm font-medium"
             >
               <Download className="w-4 h-4" />
-              Download Session
+              <span className="hidden sm:inline">Download Session</span>
+              <span className="sm:hidden">Download</span>
             </button>
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition-colors text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
-              Add Dependency
+              <span className="hidden sm:inline">Add Dependency</span>
+               <span className="sm:hidden">Add</span>
             </button>
             <div className="flex gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-slate-300"></span> Stable
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500"></span> Outdated Deps
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span> Outdated
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Selected
@@ -542,13 +544,13 @@ export default function MainPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
           {/* Main Visualization Board */}
-          <Card className="lg:col-span-3 p-6 min-h-[600px] overflow-x-auto">
-            <div className="flex justify-between min-w-[800px] h-full gap-8">
+          <Card className="xl:col-span-3 p-4 sm:p-6 min-h-[600px] overflow-x-auto">
+            <div className="flex flex-col xl:flex-row justify-between xl:min-w-[800px] h-full gap-8">
               {categories.map((cat) => (
-                <div key={cat} className="flex-1 flex flex-col gap-4 relative">
+                <div key={cat} className="flex-1 flex flex-col gap-4 relative xl:border-none border-b border-slate-200 xl:pb-0 pb-8 last:border-b-0">
                   <div className="text-xs uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-200 pb-2 mb-2">
                     {cat}
                   </div>
