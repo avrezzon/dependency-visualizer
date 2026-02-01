@@ -45,7 +45,7 @@ describe('App - Add Dependency', () => {
     fireEvent.click(readerA);
 
     // Check sidebar
-    expect(screen.getByText(/Requires/i)).toBeInTheDocument();
+    expect(screen.getByText(/Immediate Dependencies/i)).toBeInTheDocument();
     // "New Lib" should be listed in the sidebar upstream list.
     // Since we clicked it in the graph, we expect to see it referenced in sidebar too.
     const newLibTexts = screen.getAllByText('New Lib');
