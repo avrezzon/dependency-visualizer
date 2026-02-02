@@ -210,7 +210,8 @@ export default function MainPage() {
 
       // Recursively check upstream dependencies
       const upstreamDeps = connections.upstream[node.id] || [];
-      let transitiveOutliers = [];
+      // Optimization: Use Map for O(1) deduplication instead of array spread + Set filter
+      const transitiveOutliersMap = new Map();
       let isTransitivelyOutdated = false;
 
       for (const depId of upstreamDeps) {
@@ -218,21 +219,16 @@ export default function MainPage() {
         if (depState.isOutdated) {
           isTransitivelyOutdated = true;
           if (depState.outliers) {
-            transitiveOutliers.push(...depState.outliers);
+            for (const outlier of depState.outliers) {
+              if (!transitiveOutliersMap.has(outlier.name)) {
+                transitiveOutliersMap.set(outlier.name, outlier);
+              }
+            }
           }
         }
       }
 
-      // Deduplicate transitive outliers
-      const uniqueTransitive = [];
-      const seen = new Set();
-      for (const o of transitiveOutliers) {
-        if (!seen.has(o.name)) {
-          seen.add(o.name);
-          uniqueTransitive.push(o);
-        }
-      }
-      transitiveOutliers = uniqueTransitive;
+      const transitiveOutliers = Array.from(transitiveOutliersMap.values());
 
       const isOutdated = directOutliers.length > 0 || isTransitivelyOutdated;
 
