@@ -8,8 +8,11 @@ import {
   Database,
   Cpu,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Copy,
+  Check
 } from 'lucide-react';
+import { useState } from 'react';
 import { isValidUrl } from '../utils/security';
 
 const getIcon = (type) => {
@@ -38,8 +41,16 @@ const Badge = ({ children, color = "slate" }) => {
 };
 
 export default function DependencyDetails({ node, onBack, upstreamIds, downstreamIds, nodesMap, onNodeSelect }) {
+  const [copied, setCopied] = useState(false);
+
   // Sort history by date descending, take last 5
   const history = [...(node.history || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(node.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -64,7 +75,17 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
                 <h1 className="text-2xl font-bold text-slate-800">{node.label}</h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
                   <Badge color="blue">{node.category}</Badge>
-                  <span className="text-slate-400 text-sm font-mono">{node.id}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-sm font-mono">{node.id}</span>
+                    <button
+                      onClick={handleCopy}
+                      className="p-1 text-slate-400 hover:text-indigo-600 transition-colors rounded-md hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      aria-label="Copy ID to clipboard"
+                      title="Copy ID"
+                    >
+                      {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
                   {(node.org || node.artifactId) && (
                     <div className="flex items-center gap-3 text-sm text-slate-500">
                       {node.org && (
