@@ -20,6 +20,7 @@ import DependencyActions from '../components/DependencyActions';
 import VersionBumpButtons from '../components/VersionBumpButtons';
 import { bumpString } from '../utils/versioning';
 import { generateRandomGraph } from '../utils/randomGraph';
+import { validateSessionData } from '../utils/security';
 
 // --- Configuration & Initial Data ---
 
@@ -529,13 +530,14 @@ export default function MainPage() {
       reader.onload = (e) => {
         try {
           const sessionData = JSON.parse(e.target.result);
-          if (sessionData.nodes && sessionData.edges && sessionData.dependencyLocks) {
+          const validation = validateSessionData(sessionData);
+          if (validation.isValid) {
             setNodes(sessionData.nodes);
             setEdges(sessionData.edges);
             setDependencyLocks(sessionData.dependencyLocks);
             setShowWelcomeModal(false);
           } else {
-            alert("Invalid JSON format. The file must contain nodes, edges, and dependencyLocks.");
+            alert("Invalid session file: " + validation.error);
           }
         } catch (error) {
           alert("Error parsing JSON file: " + error.message);
