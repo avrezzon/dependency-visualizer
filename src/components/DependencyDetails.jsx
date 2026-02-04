@@ -12,7 +12,7 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { isValidUrl } from '../utils/security';
 
 const getIcon = (type) => {
@@ -44,7 +44,9 @@ export default function DependencyDetails({ node, onBack, upstreamIds, downstrea
   const [copied, setCopied] = useState(false);
 
   // Sort history by date descending, take last 5
-  const history = [...(node.history || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  const history = useMemo(() => {
+    return [...(node.history || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  }, [node.history]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(node.id);
