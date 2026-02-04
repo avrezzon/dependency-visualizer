@@ -368,9 +368,11 @@ export default function MainPage() {
     const queue = [...direct];
     const visited = new Set(direct);
     visited.add(selectedNode); // Don't include the node itself
+    let head = 0;
 
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // Optimization: Use index pointer instead of shift() to avoid O(n) array operations
+    while (head < queue.length) {
+      const current = queue[head++];
       const neighbors = connections.upstream[current] || [];
       for (const neighbor of neighbors) {
         if (!visited.has(neighbor)) {
@@ -397,9 +399,11 @@ export default function MainPage() {
       const queue = [start];
       const visited = new Set([start]);
       related.add(start);
+      let head = 0;
 
-      while(queue.length > 0) {
-        const current = queue.shift();
+      // Optimization: Use index pointer instead of shift() to avoid O(n) array operations
+      while(head < queue.length) {
+        const current = queue[head++];
         const neighbors = connections[direction][current] || [];
         for (const neighbor of neighbors) {
           if (!visited.has(neighbor)) {
