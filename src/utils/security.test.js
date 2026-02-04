@@ -32,9 +32,9 @@ describe('security utils', () => {
   describe('validateSessionData', () => {
     it('returns valid for correct session data', () => {
       const data = {
-        nodes: [{ id: '1', label: 'Node 1' }],
+        nodes: [{ id: '1', label: 'Node 1', version: '1.0.0' }],
         edges: [{ source: '1', target: '2' }],
-        dependencyLocks: { '1': {} }
+        dependencyLocks: { '1': { '2': '1.0.0' } }
       };
       const result = validateSessionData(data);
       expect(result.isValid).toBe(true);
@@ -52,15 +52,46 @@ describe('security utils', () => {
       expect(validateSessionData({ ...data, nodes: {} }).isValid).toBe(false);
     });
 
-    it('returns invalid if a node lacks id', () => {
+    it('returns invalid if a node lacks id or id is not a string', () => {
         const data = {
             nodes: [{ label: 'Node 1' }], // Missing id
             edges: [],
             dependencyLocks: {}
         };
-        const result = validateSessionData(data);
-        expect(result.isValid).toBe(false);
-        expect(result.error).toContain('id');
+        expect(validateSessionData(data).isValid).toBe(false);
+
+        const data2 = {
+            nodes: [{ id: 123, label: 'Node 1' }], // Non-string id
+            edges: [],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data2).isValid).toBe(false);
+    });
+
+    it('returns invalid if node properties are not strings', () => {
+        const data = {
+            nodes: [{ id: '1', label: { invalid: 'obj' } }], // Non-string label
+            edges: [],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
+
+        const data2 = {
+            nodes: [{ id: '1', version: 1.0 }], // Non-string version
+            edges: [],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data2).isValid).toBe(false);
+    });
+
+    it('returns invalid if strings are too long', () => {
+        const longString = 'a'.repeat(1001);
+        const data = {
+            nodes: [{ id: longString, label: 'Node 1' }],
+            edges: [],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
     });
 
     it('returns invalid if edges is missing or not array', () => {
@@ -78,10 +109,28 @@ describe('security utils', () => {
         expect(validateSessionData(data).isValid).toBe(false);
     });
 
+    it('returns invalid if edge source/target are not strings', () => {
+        const data = {
+            nodes: [{ id: '1' }],
+            edges: [{ source: '1', target: 2 }],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
+    });
+
     it('returns invalid if dependencyLocks is missing or not object', () => {
         const data = { nodes: [], edges: [] };
         expect(validateSessionData(data).isValid).toBe(false);
         expect(validateSessionData({ ...data, dependencyLocks: [] }).isValid).toBe(false);
+    });
+
+    it('returns invalid if dependencyLocks contains invalid structure', () => {
+        const data = {
+            nodes: [],
+            edges: [],
+            dependencyLocks: { 'node1': { 'dep1': 123 } } // Version is number
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
     });
   });
 });
