@@ -17,3 +17,7 @@
 ## 2026-02-04 - Accessible Modal Pattern & Focus Management
 **Learning:** Fixed invalid nesting of inputs inside buttons and implemented focus management for the WelcomeModal. Focusing the first interactive element on mount significantly improves keyboard usability for mandatory modals.
 **Action:** Ensure all future modals, even custom ones, have role="dialog", aria-modal="true", and manage initial focus.
+
+## 2026-02-04 - Modal Consistency Audit
+**Learning:** Identified another custom modal implementation ("Add Dependency") in `MainPage.jsx` that lacked accessibility roles and keyboard support. Replacing it with the shared `Modal` component instantly provided `role="dialog"`, `aria-modal`, `Escape` key support, and focus trapping.
+**Action:** When working in older files, actively look for `fixed inset-0` or similar classes that suggest ad-hoc modal implementations and replace them with the standard `Modal` component.
