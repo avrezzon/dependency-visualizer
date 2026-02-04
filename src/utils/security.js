@@ -16,20 +16,42 @@ export const isValidUrl = (url) => {
 };
 
 /**
- * Validates the structure of imported session data to prevent crashes and data corruption.
+ * Validates the session data imported from a JSON file.
+ * Checks for existence and correct type of nodes, edges, and dependencyLocks.
+ * Also verifies basic structure of nodes.
  *
- * @param {object} data - The parsed JSON data from the uploaded file
- * @returns {boolean} - True if the data structure is valid, false otherwise
+ * @param {any} data - The parsed JSON data
+ * @returns {{isValid: boolean, error?: string}} - Validation result
  */
 export const validateSessionData = (data) => {
-  if (!data || typeof data !== 'object') return false;
-  if (!Array.isArray(data.nodes)) return false;
-  if (!Array.isArray(data.edges)) return false;
-  if (!data.dependencyLocks || typeof data.dependencyLocks !== 'object') return false;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { isValid: false, error: 'Session data must be an object.' };
+  }
 
-  // Ensure all nodes have an ID string to prevent crashes during rendering
-  // We check for id because it's used as key and for lookups
-  if (!data.nodes.every(n => n && typeof n === 'object' && typeof n.id === 'string')) return false;
+  // Validate nodes
+  if (!Array.isArray(data.nodes)) {
+    return { isValid: false, error: 'Session data must contain a "nodes" array.' };
+  }
+  for (const node of data.nodes) {
+    if (!node || typeof node !== 'object' || !node.id) {
+       return { isValid: false, error: 'All nodes must be objects with an "id" property.' };
+    }
+  }
 
-  return true;
+  // Validate edges
+  if (!Array.isArray(data.edges)) {
+    return { isValid: false, error: 'Session data must contain an "edges" array.' };
+  }
+  for (const edge of data.edges) {
+    if (!edge || typeof edge !== 'object' || !edge.source || !edge.target) {
+      return { isValid: false, error: 'All edges must be objects with "source" and "target" properties.' };
+    }
+  }
+
+  // Validate dependencyLocks
+  if (!data.dependencyLocks || typeof data.dependencyLocks !== 'object' || Array.isArray(data.dependencyLocks)) {
+    return { isValid: false, error: 'Session data must contain a "dependencyLocks" object.' };
+  }
+
+  return { isValid: true };
 };

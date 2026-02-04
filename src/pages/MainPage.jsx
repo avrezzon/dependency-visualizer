@@ -18,6 +18,7 @@ import WelcomeModal from '../components/WelcomeModal';
 import DependencyDetails from '../components/DependencyDetails';
 import DependencyActions from '../components/DependencyActions';
 import VersionBumpButtons from '../components/VersionBumpButtons';
+import GraphNode from '../components/GraphNode';
 import { bumpString } from '../utils/versioning';
 import { generateRandomGraph } from '../utils/randomGraph';
 import { validateSessionData } from '../utils/security';
@@ -367,9 +368,11 @@ export default function MainPage() {
     const queue = [...direct];
     const visited = new Set(direct);
     visited.add(selectedNode); // Don't include the node itself
+    let head = 0;
 
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // Optimization: Use index pointer instead of shift() to avoid O(n) array operations
+    while (head < queue.length) {
+      const current = queue[head++];
       const neighbors = connections.upstream[current] || [];
       for (const neighbor of neighbors) {
         if (!visited.has(neighbor)) {
@@ -396,9 +399,11 @@ export default function MainPage() {
       const queue = [start];
       const visited = new Set([start]);
       related.add(start);
+      let head = 0;
 
-      while(queue.length > 0) {
-        const current = queue.shift();
+      // Optimization: Use index pointer instead of shift() to avoid O(n) array operations
+      while(head < queue.length) {
+        const current = queue[head++];
         const neighbors = connections[direction][current] || [];
         for (const neighbor of neighbors) {
           if (!visited.has(neighbor)) {
@@ -530,13 +535,14 @@ export default function MainPage() {
       reader.onload = (e) => {
         try {
           const sessionData = JSON.parse(e.target.result);
-          if (validateSessionData(sessionData)) {
+          const validation = validateSessionData(sessionData);
+          if (validation.isValid) {
             setNodes(sessionData.nodes);
             setEdges(sessionData.edges);
             setDependencyLocks(sessionData.dependencyLocks);
             setShowWelcomeModal(false);
           } else {
-            alert("Invalid session file format. The file must contain valid nodes, edges, and dependencyLocks.");
+            alert("Invalid session file: " + validation.error);
           }
         } catch (error) {
           alert("Error parsing JSON file: " + error.message);
@@ -644,60 +650,17 @@ export default function MainPage() {
                     const status = outdatedNodes[node.id];
 
                     return (
-                      <div
+                      <GraphNode
                         key={node.id}
-                        data-testid={`node-${node.id}`}
-                        onClick={() => setSelectedNode(node.id)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedNode(node.id); } }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${node.label} version ${node.version}, ${node.category} dependency`}
-                        onMouseEnter={() => setHoveredNode(node.id)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                        className={`
-                          relative p-4 rounded-lg border-2 transition-all cursor-pointer group
-                          ${isSelected
-                            ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-200 ring-offset-1'
-                            : status.isOutdated
-                              ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
-                              : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
-                          }
-                          ${!isHighlighted ? 'opacity-30 blur-[1px] grayscale' : 'opacity-100'}
-                        `}
-                      >
-                        {/* Connecting Lines (Simplified for visual reference only) */}
-                        {connections.upstream[node.id] && (
-                           <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-slate-300" />
-                        )}
-                        {connections.downstream[node.id] && (
-                           <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-slate-300" />
-                        )}
-
-                        <div className="flex flex-col mb-2">
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2">
-                              {getIcon(node.type)}
-                              <span className="font-semibold text-sm">{node.label}</span>
-                            </div>
-                            {status.isOutdated && (
-                              <AlertCircle className="w-4 h-4 text-amber-500 animate-pulse" />
-                            )}
-                          </div>
-                          {(node.org || node.artifactId) && (
-                            <div className="mt-1 text-[10px] text-slate-500 font-mono pl-7">
-                              {node.org && <span>{node.org} / </span>}
-                              {node.artifactId && <span>{node.artifactId}</span>}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between mt-3">
-                          <code className="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                            v{node.version}
-                          </code>
-                          <span className="text-[10px] text-slate-400 uppercase font-bold">{node.id}</span>
-                        </div>
-                      </div>
+                        node={node}
+                        isSelected={isSelected}
+                        isHighlighted={isHighlighted}
+                        isOutdated={status.isOutdated}
+                        hasUpstream={!!connections.upstream[node.id]}
+                        hasDownstream={!!connections.downstream[node.id]}
+                        onSelect={setSelectedNode}
+                        onHover={setHoveredNode}
+                      />
                     );
                   })}
                 </div>
