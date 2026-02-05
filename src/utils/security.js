@@ -29,7 +29,7 @@ export const validateSessionData = (data) => {
   }
 
   const MAX_STRING_LENGTH = 1000;
-  const isSafeString = (str) => typeof str === 'string' && str.length <= MAX_STRING_LENGTH;
+  const isSafeString = (str, maxLength = MAX_STRING_LENGTH) => typeof str === 'string' && str.length <= maxLength;
 
   // Validate nodes
   if (!Array.isArray(data.nodes)) {
@@ -60,6 +60,38 @@ export const validateSessionData = (data) => {
     }
     if (node.category !== undefined && !isSafeString(node.category)) {
        return { isValid: false, error: 'Node "category" must be a string.' };
+    }
+
+    // Validate history if present
+    if (node.history !== undefined) {
+      if (!Array.isArray(node.history)) {
+        return { isValid: false, error: 'Node "history" must be an array.' };
+      }
+      if (node.history.length > 50) {
+        return { isValid: false, error: 'Node "history" cannot have more than 50 items.' };
+      }
+      for (const item of node.history) {
+        if (!item || typeof item !== 'object') {
+          return { isValid: false, error: 'History items must be objects.' };
+        }
+        if (item.version !== undefined && !isSafeString(item.version, 100)) {
+           return { isValid: false, error: 'History "version" must be a string (max 100 chars).' };
+        }
+        if (item.date !== undefined && !isSafeString(item.date, 100)) {
+           return { isValid: false, error: 'History "date" must be a string (max 100 chars).' };
+        }
+        if (item.changelog !== undefined && !isSafeString(item.changelog, 2000)) {
+           return { isValid: false, error: 'History "changelog" must be a string (max 2000 chars).' };
+        }
+        if (item.prLink !== undefined) {
+          if (!isSafeString(item.prLink, 500)) {
+             return { isValid: false, error: 'History "prLink" must be a string (max 500 chars).' };
+          }
+          if (!isValidUrl(item.prLink)) {
+             return { isValid: false, error: 'History "prLink" must be a valid http/https URL.' };
+          }
+        }
+      }
     }
   }
 
