@@ -182,23 +182,63 @@ export default function MainPage() {
     return { downstream, upstream };
   }, [edges]);
 
-  // Determine which nodes are outdated, including transitive dependencies
-  const outdatedNodes = useMemo(() => {
-    const outdated = {};
-    const memo = {}; // Memoization for checkNodeState
+  // Determine which nodes are outdated (boolean only) - fast O(N+E) check
+  const nodeStatus = useMemo(() => {
+    const status = {};
+    const memo = {};
 
-    const checkNodeState = (nodeId) => {
-      if (Object.prototype.hasOwnProperty.call(memo, nodeId)) return memo[nodeId];
+    const checkStatus = (nodeId) => {
+      if (memo[nodeId] !== undefined) return memo[nodeId];
 
       const node = nodesMap.get(nodeId);
-      if (!node) {
-        return { isOutdated: false, outliers: [] };
+      if (!node) return false;
+
+      // Check direct dependencies
+      const directLocks = dependencyLocks[node.id] || {};
+      for (const [depId, lockedVersion] of Object.entries(directLocks)) {
+        const actualDep = nodesMap.get(depId);
+        if (actualDep && actualDep.version !== lockedVersion) {
+          memo[nodeId] = true;
+          return true;
+        }
       }
+
+      // Recursively check upstream dependencies
+      const upstreamDeps = connections.upstream[node.id] || [];
+      for (const depId of upstreamDeps) {
+        if (checkStatus(depId)) {
+          memo[nodeId] = true;
+          return true;
+        }
+      }
+
+      memo[nodeId] = false;
+      return false;
+    };
+
+    nodes.forEach(node => {
+      status[node.id] = checkStatus(node.id);
+    });
+
+    return status;
+  }, [nodes, dependencyLocks, connections, nodesMap]);
+
+  // Compute detailed outliers ONLY for the selected node (on-demand)
+  const selectedNodeOutliers = useMemo(() => {
+    if (!selectedNode) return [];
+
+    const memo = {}; // Memoization for internal recursion
+
+    const collectOutliers = (nodeId) => {
+      if (memo[nodeId]) return memo[nodeId];
+
+      const node = nodesMap.get(nodeId);
+      if (!node) return [];
 
       const directLocks = dependencyLocks[node.id] || {};
       const directOutliers = [];
 
-      // Check direct dependencies
+      // Check direct
       for (const [depId, lockedVersion] of Object.entries(directLocks)) {
         const actualDep = nodesMap.get(depId);
         if (actualDep && actualDep.version !== lockedVersion) {
@@ -210,45 +250,26 @@ export default function MainPage() {
         }
       }
 
-      // Recursively check upstream dependencies
+      // Check upstream
       const upstreamDeps = connections.upstream[node.id] || [];
-      // Optimization: Use Map for O(1) deduplication instead of array spread + Set filter
       const transitiveOutliersMap = new Map();
-      let isTransitivelyOutdated = false;
 
       for (const depId of upstreamDeps) {
-        const depState = checkNodeState(depId);
-        if (depState.isOutdated) {
-          isTransitivelyOutdated = true;
-          if (depState.outliers) {
-            for (const outlier of depState.outliers) {
-              if (!transitiveOutliersMap.has(outlier.name)) {
-                transitiveOutliersMap.set(outlier.name, outlier);
-              }
-            }
+        const depOutliers = collectOutliers(depId);
+        for (const outlier of depOutliers) {
+          if (!transitiveOutliersMap.has(outlier.name)) {
+            transitiveOutliersMap.set(outlier.name, outlier);
           }
         }
       }
 
-      const transitiveOutliers = Array.from(transitiveOutliersMap.values());
-
-      const isOutdated = directOutliers.length > 0 || isTransitivelyOutdated;
-
-      const result = {
-        isOutdated,
-        outliers: [...directOutliers, ...transitiveOutliers],
-        isTransitivelyOutdated
-      };
-      memo[nodeId] = result;
-      return result;
+      const allOutliers = [...directOutliers, ...transitiveOutliersMap.values()];
+      memo[nodeId] = allOutliers;
+      return allOutliers;
     };
 
-    nodes.forEach(node => {
-      outdated[node.id] = checkNodeState(node.id);
-    });
-
-    return outdated;
-  }, [nodes, dependencyLocks, connections, nodesMap]);
+    return collectOutliers(selectedNode);
+  }, [selectedNode, dependencyLocks, connections, nodesMap]);
 
   // Handle delete node
   const handleDeleteNode = () => {
@@ -647,7 +668,7 @@ export default function MainPage() {
                   {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = outdatedNodes[node.id];
+                    const isOutdated = nodeStatus[node.id];
 
                     return (
                       <GraphNode
@@ -655,7 +676,7 @@ export default function MainPage() {
                         node={node}
                         isSelected={isSelected}
                         isHighlighted={isHighlighted}
-                        isOutdated={status.isOutdated}
+                        isOutdated={isOutdated}
                         hasUpstream={!!connections.upstream[node.id]}
                         hasDownstream={!!connections.downstream[node.id]}
                         onSelect={setSelectedNode}
@@ -679,7 +700,7 @@ export default function MainPage() {
               ) : (
                 (() => {
                   const node = nodes.find(n => n.id === selectedNode);
-                  const status = outdatedNodes[node.id];
+                  const isOutdated = nodeStatus[node.id];
                   const upstream = connections.upstream[node.id] || [];
                   const downstream = connections.downstream[node.id] || [];
 
@@ -721,14 +742,14 @@ export default function MainPage() {
                         <div className="text-sm font-medium text-slate-700">Release Management</div>
                         <VersionBumpButtons node={node} handleBump={handleBump} />
 
-                        {status.isOutdated && (
+                        {isOutdated && (
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                             <div className="flex items-start gap-2 mb-2">
                               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
                               <div className="text-sm font-semibold text-amber-800">Dependency Drift</div>
                             </div>
                             <div className="space-y-1 mb-3">
-                              {status.outliers.map((o, i) => (
+                              {selectedNodeOutliers.map((o, i) => (
                                 <div key={i} className="text-xs text-amber-700">
                                   Uses <span className="font-mono">{o.name}@{o.using}</span> (Latest: {o.current})
                                 </div>
