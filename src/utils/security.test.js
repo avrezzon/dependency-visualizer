@@ -95,7 +95,10 @@ describe('security utils', () => {
     });
 
     it('returns invalid if too many nodes', () => {
-        const nodes = Array.from({ length: 201 }, (_, i) => ({ id: `node-${i}` }));
+        const nodes = [];
+        for (let i = 0; i < 201; i++) {
+            nodes.push({ id: `node-${i}` });
+        }
         const data = {
             nodes,
             edges: [],
@@ -105,7 +108,7 @@ describe('security utils', () => {
     });
 
     it('returns invalid if too many edges', () => {
-        const edges = Array.from({ length: 501 }, (_, i) => ({ source: '1', target: '2' }));
+        const edges = Array.from({ length: 501 }, () => ({ source: '1', target: '2' }));
         const data = {
             nodes: [{ id: '1' }, { id: '2' }],
             edges,
