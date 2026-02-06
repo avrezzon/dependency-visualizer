@@ -21,3 +21,7 @@
 ## 2026-02-05 - Accessible State Indicators
 **Learning:** Visual-only state indicators (like icons or colors) must be exposed to screen readers. Modifying the parent container's `aria-label` is often cleaner than adding hidden text if the container is already interactive.
 **Action:** When adding status icons to interactive elements, update the parent's `aria-label` with the status text and hide the icon with `aria-hidden='true'` and add a `title` for mouse users.
+
+## 2026-02-06 - Inline Modal Anti-pattern
+**Learning:** Inline modal implementations (using absolute/fixed positioning directly in page components) often miss critical accessibility features like Escape key handling and proper ARIA roles. Replacing them with a centralized, accessible `Modal` component significantly improves UX consistency and a11y compliance.
+**Action:** Proactively identify and refactor inline `fixed inset-0` modal patterns to use the shared `Modal` component.
