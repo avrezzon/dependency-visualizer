@@ -182,13 +182,56 @@ export default function MainPage() {
     return { downstream, upstream };
   }, [edges]);
 
-  // Determine which nodes are outdated, including transitive dependencies
-  const outdatedNodes = useMemo(() => {
-    const outdated = {};
-    const memo = {}; // Memoization for checkNodeState
+  // Determine which nodes are outdated (Boolean only) - Optimized O(N+E)
+  const nodeStatusMap = useMemo(() => {
+    const statusMap = {}; // nodeId -> { isOutdated: boolean }
+    const memo = {};
 
-    const checkNodeState = (nodeId) => {
-      if (Object.prototype.hasOwnProperty.call(memo, nodeId)) return memo[nodeId];
+    const checkNodeStatus = (nodeId) => {
+      if (memo[nodeId] !== undefined) return memo[nodeId];
+
+      const node = nodesMap.get(nodeId);
+      if (!node) return false;
+
+      const directLocks = dependencyLocks[node.id] || {};
+
+      // Check direct dependencies
+      for (const [depId, lockedVersion] of Object.entries(directLocks)) {
+        const actualDep = nodesMap.get(depId);
+        if (actualDep && actualDep.version !== lockedVersion) {
+          memo[nodeId] = true;
+          return true;
+        }
+      }
+
+      // Recursively check upstream dependencies
+      const upstreamDeps = connections.upstream[node.id] || [];
+      for (const depId of upstreamDeps) {
+        if (checkNodeStatus(depId)) {
+          memo[nodeId] = true;
+          return true;
+        }
+      }
+
+      memo[nodeId] = false;
+      return false;
+    };
+
+    nodes.forEach(node => {
+      statusMap[node.id] = { isOutdated: checkNodeStatus(node.id) };
+    });
+
+    return statusMap;
+  }, [nodes, dependencyLocks, connections, nodesMap]);
+
+  // Determine detailed outliers ONLY for the selected node
+  const selectedNodeOutliers = useMemo(() => {
+    if (!selectedNode) return { isOutdated: false, outliers: [] };
+
+    const memo = {};
+
+    const checkNodeStateDetailed = (nodeId) => {
+      if (memo[nodeId]) return memo[nodeId];
 
       const node = nodesMap.get(nodeId);
       if (!node) {
@@ -198,7 +241,6 @@ export default function MainPage() {
       const directLocks = dependencyLocks[node.id] || {};
       const directOutliers = [];
 
-      // Check direct dependencies
       for (const [depId, lockedVersion] of Object.entries(directLocks)) {
         const actualDep = nodesMap.get(depId);
         if (actualDep && actualDep.version !== lockedVersion) {
@@ -210,14 +252,12 @@ export default function MainPage() {
         }
       }
 
-      // Recursively check upstream dependencies
       const upstreamDeps = connections.upstream[node.id] || [];
-      // Optimization: Use Map for O(1) deduplication instead of array spread + Set filter
       const transitiveOutliersMap = new Map();
       let isTransitivelyOutdated = false;
 
       for (const depId of upstreamDeps) {
-        const depState = checkNodeState(depId);
+        const depState = checkNodeStateDetailed(depId);
         if (depState.isOutdated) {
           isTransitivelyOutdated = true;
           if (depState.outliers) {
@@ -231,7 +271,6 @@ export default function MainPage() {
       }
 
       const transitiveOutliers = Array.from(transitiveOutliersMap.values());
-
       const isOutdated = directOutliers.length > 0 || isTransitivelyOutdated;
 
       const result = {
@@ -243,12 +282,8 @@ export default function MainPage() {
       return result;
     };
 
-    nodes.forEach(node => {
-      outdated[node.id] = checkNodeState(node.id);
-    });
-
-    return outdated;
-  }, [nodes, dependencyLocks, connections, nodesMap]);
+    return checkNodeStateDetailed(selectedNode);
+  }, [selectedNode, nodesMap, dependencyLocks, connections]);
 
   // Handle delete node
   const handleDeleteNode = () => {
@@ -647,7 +682,7 @@ export default function MainPage() {
                   {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = outdatedNodes[node.id];
+                    const status = nodeStatusMap[node.id];
 
                     return (
                       <GraphNode
@@ -679,7 +714,7 @@ export default function MainPage() {
               ) : (
                 (() => {
                   const node = nodes.find(n => n.id === selectedNode);
-                  const status = outdatedNodes[node.id];
+                  const status = selectedNodeOutliers;
                   const upstream = connections.upstream[node.id] || [];
                   const downstream = connections.downstream[node.id] || [];
 
