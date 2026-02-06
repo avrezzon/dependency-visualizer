@@ -94,6 +94,26 @@ describe('security utils', () => {
         expect(validateSessionData(data).isValid).toBe(false);
     });
 
+    it('returns invalid if too many nodes', () => {
+        const nodes = Array.from({ length: 201 }, (_, i) => ({ id: `node-${i}` }));
+        const data = {
+            nodes,
+            edges: [],
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
+    });
+
+    it('returns invalid if too many edges', () => {
+        const edges = Array.from({ length: 501 }, (_, i) => ({ source: '1', target: '2' }));
+        const data = {
+            nodes: [{ id: '1' }, { id: '2' }],
+            edges,
+            dependencyLocks: {}
+        };
+        expect(validateSessionData(data).isValid).toBe(false);
+    });
+
     it('returns invalid if edges is missing or not array', () => {
         const data = { nodes: [], dependencyLocks: {} };
         expect(validateSessionData(data).isValid).toBe(false);

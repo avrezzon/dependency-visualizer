@@ -565,7 +565,14 @@ export default function MainPage() {
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
+    const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
     if (file && file.type === "application/json") {
+      if (file.size > MAX_FILE_SIZE) {
+        alert("File is too large. Maximum size is 1MB.");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
