@@ -12,3 +12,8 @@
 **Vulnerability:** The initial `validateSessionData` implementation checked for property existence but ignored data types and lengths. This allowed non-string values (causing render crashes) and excessively large payloads (DoS risk).
 **Learning:** "Existence checks" are insufficient for security validation. Defensive coding requires strict type enforcement and boundary checks (e.g., max string length) on all external inputs.
 **Prevention:** Updated `validateSessionData` to strictly verify that `id`, `label`, and other text fields are strings and fall within defined length limits (1000 chars).
+
+## 2026-06-15 - Unbounded Graph Size DoS
+**Vulnerability:** `validateSessionData` checked types but not array lengths, allowing massive JSON payloads (e.g., 1M nodes) to crash the UI via memory exhaustion.
+**Learning:** Validating data *types* is insufficient for complex objects. You must also validate *quantity* and *depth* to prevent resource exhaustion (DoS).
+**Prevention:** Enforced strict limits on `nodes` (200), `edges` (500), and `history` (50) arrays in the validation schema.
