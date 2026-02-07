@@ -132,5 +132,70 @@ describe('security utils', () => {
         };
         expect(validateSessionData(data).isValid).toBe(false);
     });
+
+    it('returns invalid if nodes array exceeds 200 items', () => {
+      const data = {
+        nodes: Array(201).fill().map((_, i) => ({ id: `node-${i}` })),
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data).isValid).toBe(false);
+    });
+
+    it('returns invalid if edges array exceeds 500 items', () => {
+      const data = {
+        nodes: [{ id: '1' }, { id: '2' }],
+        edges: Array(501).fill().map(() => ({ source: '1', target: '2' })),
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data).isValid).toBe(false);
+    });
+
+    it('returns invalid if node history exceeds 50 items', () => {
+      const data = {
+        nodes: [{
+          id: '1',
+          history: Array(51).fill().map((_, i) => ({ version: `1.${i}.0` }))
+        }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data).isValid).toBe(false);
+    });
+
+    it('returns invalid if node history items are not objects', () => {
+      const data = {
+        nodes: [{
+          id: '1',
+          history: ['not-an-object']
+        }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data).isValid).toBe(false);
+    });
+
+    it('returns invalid if node history properties are not safe strings', () => {
+      const longString = 'a'.repeat(1001);
+      const data = {
+        nodes: [{
+          id: '1',
+          history: [{ version: longString }]
+        }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data).isValid).toBe(false);
+
+      const data2 = {
+        nodes: [{
+          id: '1',
+          history: [{ prLink: 123 }]
+        }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data2).isValid).toBe(false);
+    });
   });
 });
