@@ -17,10 +17,10 @@ describe('App - Add Dependency', () => {
     fireEvent.click(screen.getByRole('button', { name: /Add Dependency/i }));
 
     // Fill Form
-    const nameInput = screen.getByPlaceholderText(/e.g. auth-service/i);
+    const nameInput = screen.getByRole('textbox', { name: /Dependency Name/i });
     fireEvent.change(nameInput, { target: { value: 'New Lib' } });
 
-    const versionInput = screen.getByPlaceholderText(/1.0.0/i);
+    const versionInput = screen.getByRole('textbox', { name: /Version/i });
     fireEvent.change(versionInput, { target: { value: '1.2.3' } });
 
     // Select Consumer (e.g. Reader A)
