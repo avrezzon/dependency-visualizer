@@ -132,5 +132,72 @@ describe('security utils', () => {
         };
         expect(validateSessionData(data).isValid).toBe(false);
     });
+
+    it('returns invalid if node count exceeds limit', () => {
+      const nodes = Array(201).fill().map((_, i) => ({ id: `node-${i}` }));
+      const data = {
+        nodes,
+        edges: [],
+        dependencyLocks: {}
+      };
+      const result = validateSessionData(data);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('Max 200 nodes allowed');
+    });
+
+    it('returns invalid if edge count exceeds limit', () => {
+      const edges = Array(501).fill().map((_, i) => ({ source: `s-${i}`, target: `t-${i}` }));
+      const data = {
+        nodes: [{ id: '1' }],
+        edges,
+        dependencyLocks: {}
+      };
+      const result = validateSessionData(data);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('Max 500 edges allowed');
+    });
+
+    it('returns invalid if node history exceeds limit', () => {
+      const history = Array(51).fill().map((_, i) => ({ version: `1.0.${i}`, date: '2023-01-01' }));
+      const data = {
+        nodes: [{ id: '1', history }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      const result = validateSessionData(data);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('Max 50 history entries per node');
+    });
+
+    it('returns invalid if node history has invalid structure', () => {
+       const data1 = {
+        nodes: [{ id: '1', history: 'invalid' }], // Not an array
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data1).isValid).toBe(false);
+
+      const data2 = {
+        nodes: [{ id: '1', history: [null] }], // Item not object
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data2).isValid).toBe(false);
+
+      const data3 = {
+        nodes: [{ id: '1', history: [{ version: 1.0 }] }], // Version not string
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data3).isValid).toBe(false);
+
+      const longString = 'a'.repeat(1001);
+       const data5 = {
+        nodes: [{ id: '1', history: [{ changelog: longString }] }],
+        edges: [],
+        dependencyLocks: {}
+      };
+      expect(validateSessionData(data5).isValid).toBe(false);
+    });
   });
 });
