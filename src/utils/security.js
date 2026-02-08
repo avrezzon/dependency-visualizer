@@ -35,6 +35,10 @@ export const validateSessionData = (data) => {
   if (!Array.isArray(data.nodes)) {
     return { isValid: false, error: 'Session data must contain a "nodes" array.' };
   }
+  if (data.nodes.length > 200) {
+    return { isValid: false, error: 'Max 200 nodes allowed.' };
+  }
+
   for (const node of data.nodes) {
     if (!node || typeof node !== 'object') {
        return { isValid: false, error: 'All nodes must be objects.' };
@@ -61,11 +65,41 @@ export const validateSessionData = (data) => {
     if (node.category !== undefined && !isSafeString(node.category)) {
        return { isValid: false, error: 'Node "category" must be a string.' };
     }
+
+    // Validate history if present
+    if (node.history !== undefined) {
+      if (!Array.isArray(node.history)) {
+        return { isValid: false, error: 'Node "history" must be an array.' };
+      }
+      if (node.history.length > 50) {
+        return { isValid: false, error: 'Max 50 history entries per node.' };
+      }
+      for (const entry of node.history) {
+        if (!entry || typeof entry !== 'object') {
+          return { isValid: false, error: 'History entries must be objects.' };
+        }
+        if (entry.version !== undefined && !isSafeString(entry.version)) {
+          return { isValid: false, error: 'History "version" must be a string.' };
+        }
+        if (entry.prLink !== undefined && !isSafeString(entry.prLink)) {
+          return { isValid: false, error: 'History "prLink" must be a string.' };
+        }
+        if (entry.changelog !== undefined && !isSafeString(entry.changelog)) {
+          return { isValid: false, error: 'History "changelog" must be a string.' };
+        }
+        if (entry.date !== undefined && !isSafeString(entry.date)) {
+          return { isValid: false, error: 'History "date" must be a string.' };
+        }
+      }
+    }
   }
 
   // Validate edges
   if (!Array.isArray(data.edges)) {
     return { isValid: false, error: 'Session data must contain an "edges" array.' };
+  }
+  if (data.edges.length > 500) {
+    return { isValid: false, error: 'Max 500 edges allowed.' };
   }
   for (const edge of data.edges) {
     if (!edge || typeof edge !== 'object') {
