@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Plus,
   Download,
-  X,
   Trash2
 } from 'lucide-react';
 import Modal from '../components/Modal';
