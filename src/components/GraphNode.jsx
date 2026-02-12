@@ -27,7 +27,7 @@ const GraphNode = memo(({
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(node.id); } }}
       role="button"
       tabIndex={0}
-      aria-label={`${isOutdated ? 'Outdated ' : ''}${node.label} version ${node.version}, ${node.category} dependency`}
+      aria-label={`${node.label} version ${node.version}, ${node.category} dependency`}
       onMouseEnter={() => onHover(node.id)}
       onMouseLeave={() => onHover(null)}
       className={`
@@ -56,11 +56,7 @@ const GraphNode = memo(({
             <span className="font-semibold text-sm">{node.label}</span>
           </div>
           {isOutdated && (
-            <AlertCircle
-              className="w-4 h-4 text-amber-500 animate-pulse"
-              title="Outdated dependency"
-              aria-hidden="true"
-            />
+            <AlertCircle className="w-4 h-4 text-amber-500 animate-pulse" />
           )}
         </div>
         {(node.org || node.artifactId) && (
