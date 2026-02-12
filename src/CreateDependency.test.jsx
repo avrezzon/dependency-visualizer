@@ -7,7 +7,10 @@ describe('App - Add Dependency', () => {
     render(<App />);
     const addBtn = screen.getByRole('button', { name: /Add Dependency/i });
     fireEvent.click(addBtn);
-    expect(screen.getByText(/Add New Dependency/i)).toBeInTheDocument();
+
+    const modal = screen.getByRole('dialog', { name: 'Add New Dependency' });
+    expect(modal).toBeInTheDocument();
+    expect(modal).toHaveAttribute('aria-modal', 'true');
   });
 
   it('adds a new dependency and links it to a consumer', async () => {
