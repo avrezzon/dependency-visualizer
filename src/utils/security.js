@@ -29,11 +29,17 @@ export const validateSessionData = (data) => {
   }
 
   const MAX_STRING_LENGTH = 1000;
+  const MAX_NODES = 200;
+  const MAX_EDGES = 500;
   const isSafeString = (str) => typeof str === 'string' && str.length <= MAX_STRING_LENGTH;
 
   // Validate nodes
   if (!Array.isArray(data.nodes)) {
     return { isValid: false, error: 'Session data must contain a "nodes" array.' };
+  }
+
+  if (data.nodes.length > MAX_NODES) {
+    return { isValid: false, error: `Too many nodes. Maximum allowed is ${MAX_NODES}.` };
   }
   for (const node of data.nodes) {
     if (!node || typeof node !== 'object') {
@@ -67,6 +73,11 @@ export const validateSessionData = (data) => {
   if (!Array.isArray(data.edges)) {
     return { isValid: false, error: 'Session data must contain an "edges" array.' };
   }
+
+  if (data.edges.length > MAX_EDGES) {
+    return { isValid: false, error: `Too many edges. Maximum allowed is ${MAX_EDGES}.` };
+  }
+
   for (const edge of data.edges) {
     if (!edge || typeof edge !== 'object') {
       return { isValid: false, error: 'All edges must be objects.' };
