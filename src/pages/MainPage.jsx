@@ -4,8 +4,6 @@ import {
   Layers,
   ArrowRight,
   AlertCircle,
-  Database,
-  Cpu,
   Activity,
   RefreshCw,
   Plus,
@@ -21,6 +19,7 @@ import GraphNode from '../components/GraphNode';
 import { bumpString } from '../utils/versioning';
 import { generateRandomGraph } from '../utils/randomGraph';
 import { validateSessionData } from '../utils/security';
+import { NODE_ICONS } from '../utils/nodeIcons';
 
 // --- Configuration & Initial Data ---
 
@@ -82,15 +81,6 @@ const INITIAL_EDGES = [
 ];
 
 // --- Utilities ---
-
-const getIcon = (type) => {
-  switch(type) {
-    case 'core': return <Box className="w-5 h-5 text-blue-500" />;
-    case 'repo': return <Database className="w-5 h-5 text-emerald-500" />;
-    case 'app': return <Cpu className="w-5 h-5 text-purple-500" />;
-    default: return <Activity className="w-5 h-5" />;
-  }
-};
 
 const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
 
@@ -183,7 +173,7 @@ export default function MainPage() {
 
   // Determine which nodes are outdated (Boolean only) - Optimized O(N+E)
   const nodeStatusMap = useMemo(() => {
-    const statusMap = {}; // nodeId -> { isOutdated: boolean }
+    const statusMap = {}; // nodeId -> isOutdated (boolean)
     const memo = {};
 
     const checkNodeStatus = (nodeId) => {
@@ -217,7 +207,7 @@ export default function MainPage() {
     };
 
     nodes.forEach(node => {
-      statusMap[node.id] = { isOutdated: checkNodeStatus(node.id) };
+      statusMap[node.id] = checkNodeStatus(node.id);
     });
 
     return statusMap;
@@ -564,7 +554,14 @@ export default function MainPage() {
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
+    const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
     if (file && file.type === "application/json") {
+      if (file.size > MAX_FILE_SIZE) {
+        alert("File is too large. Maximum size is 1MB.");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -681,7 +678,7 @@ export default function MainPage() {
                   {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = nodeStatusMap[node.id];
+                    const isOutdated = nodeStatusMap[node.id];
 
                     return (
                       <GraphNode
@@ -689,7 +686,7 @@ export default function MainPage() {
                         node={node}
                         isSelected={isSelected}
                         isHighlighted={isHighlighted}
-                        isOutdated={status.isOutdated}
+                        isOutdated={isOutdated}
                         hasUpstream={!!connections.upstream[node.id]}
                         hasDownstream={!!connections.downstream[node.id]}
                         onSelect={setSelectedNode}
@@ -809,7 +806,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2">
-                                      {getIcon(upNode.type)}
+                                      {NODE_ICONS[upNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{upNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{upNode.version}</Badge>
@@ -841,7 +838,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2 opacity-70">
-                                      {getIcon(upNode.type)}
+                                      {NODE_ICONS[upNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-500 group-hover:text-indigo-600">{upNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{upNode.version}</Badge>
@@ -874,7 +871,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2">
-                                      {getIcon(downNode.type)}
+                                      {NODE_ICONS[downNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{downNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{downNode.version}</Badge>
@@ -904,14 +901,14 @@ export default function MainPage() {
           <>
             <button
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleAddDependency}
               disabled={!newDepData.name}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Create Dependency
             </button>
@@ -920,8 +917,9 @@ export default function MainPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
+            <label htmlFor="new-dep-name" className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
             <input
+              id="new-dep-name"
               type="text"
               value={newDepData.name}
               onChange={e => setNewDepData({...newDepData, name: e.target.value})}
@@ -932,8 +930,9 @@ export default function MainPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
+              <label htmlFor="new-dep-org" className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
               <input
+                id="new-dep-org"
                 type="text"
                 value={newDepData.org}
                 onChange={e => setNewDepData({...newDepData, org: e.target.value})}
@@ -942,8 +941,9 @@ export default function MainPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
+              <label htmlFor="new-dep-artifact" className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
               <input
+                id="new-dep-artifact"
                 type="text"
                 value={newDepData.artifactId}
                 onChange={e => setNewDepData({...newDepData, artifactId: e.target.value})}
@@ -955,8 +955,9 @@ export default function MainPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Version</label>
+              <label htmlFor="new-dep-version" className="block text-sm font-medium text-slate-700 mb-1">Version</label>
               <input
+                id="new-dep-version"
                 type="text"
                 value={newDepData.version}
                 onChange={e => setNewDepData({...newDepData, version: e.target.value})}
@@ -965,8 +966,9 @@ export default function MainPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <label htmlFor="new-dep-category" className="block text-sm font-medium text-slate-700 mb-1">Category</label>
               <select
+                id="new-dep-category"
                 value={newDepData.category}
                 onChange={e => setNewDepData({...newDepData, category: e.target.value})}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -977,7 +979,7 @@ export default function MainPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</label>
+            <span className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</span>
             <div className="border border-slate-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
               {nodes.map(node => (
                 <label key={node.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">

@@ -25,3 +25,6 @@
 ## 2026-02-06 - Inline Modal Anti-pattern
 **Learning:** Inline modal implementations (using absolute/fixed positioning directly in page components) often miss critical accessibility features like Escape key handling and proper ARIA roles. Replacing them with a centralized, accessible `Modal` component significantly improves UX consistency and a11y compliance.
 **Action:** Proactively identify and refactor inline `fixed inset-0` modal patterns to use the shared `Modal` component.
+## 2026-02-07 - Explicit Form Labels
+**Learning:** While implicit label nesting is valid HTML, explicit `htmlFor`/`id` association is superior for accessibility and testability (e.g., `getByLabelText`).
+**Action:** Always use explicit `htmlFor` and `id` for form inputs, especially in modals, to ensure robust screen reader support and test selectors.

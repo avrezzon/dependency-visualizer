@@ -7,7 +7,10 @@ describe('App - Add Dependency', () => {
     render(<App />);
     const addBtn = screen.getByRole('button', { name: /Add Dependency/i });
     fireEvent.click(addBtn);
-    expect(screen.getByText(/Add New Dependency/i)).toBeInTheDocument();
+
+    const modal = screen.getByRole('dialog', { name: 'Add New Dependency' });
+    expect(modal).toBeInTheDocument();
+    expect(modal).toHaveAttribute('aria-modal', 'true');
   });
 
   it('adds a new dependency and links it to a consumer', async () => {
@@ -17,10 +20,10 @@ describe('App - Add Dependency', () => {
     fireEvent.click(screen.getByRole('button', { name: /Add Dependency/i }));
 
     // Fill Form
-    const nameInput = screen.getByPlaceholderText(/e.g. auth-service/i);
+    const nameInput = screen.getByRole('textbox', { name: /Dependency Name/i });
     fireEvent.change(nameInput, { target: { value: 'New Lib' } });
 
-    const versionInput = screen.getByPlaceholderText(/1.0.0/i);
+    const versionInput = screen.getByRole('textbox', { name: /Version/i });
     fireEvent.change(versionInput, { target: { value: '1.2.3' } });
 
     // Select Consumer (e.g. Reader A)
