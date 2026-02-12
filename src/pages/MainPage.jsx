@@ -564,7 +564,14 @@ export default function MainPage() {
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
+    const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
     if (file && file.type === "application/json") {
+      if (file.size > MAX_FILE_SIZE) {
+        alert("File is too large. Maximum size is 1MB.");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -911,7 +918,7 @@ export default function MainPage() {
             <button
               onClick={handleAddDependency}
               disabled={!newDepData.name}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Create Dependency
             </button>
@@ -920,9 +927,9 @@ export default function MainPage() {
       >
         <div className="space-y-4">
           <div>
-            <label htmlFor="add-dep-name" className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
+            <label htmlFor="new-dep-name" className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
             <input
-              id="add-dep-name"
+              id="new-dep-name"
               type="text"
               value={newDepData.name}
               onChange={e => setNewDepData({...newDepData, name: e.target.value})}
@@ -933,9 +940,9 @@ export default function MainPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="add-dep-org" className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
+              <label htmlFor="new-dep-org" className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
               <input
-                id="add-dep-org"
+                id="new-dep-org"
                 type="text"
                 value={newDepData.org}
                 onChange={e => setNewDepData({...newDepData, org: e.target.value})}
@@ -944,9 +951,9 @@ export default function MainPage() {
               />
             </div>
             <div>
-              <label htmlFor="add-dep-artifact" className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
+              <label htmlFor="new-dep-artifact" className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
               <input
-                id="add-dep-artifact"
+                id="new-dep-artifact"
                 type="text"
                 value={newDepData.artifactId}
                 onChange={e => setNewDepData({...newDepData, artifactId: e.target.value})}
@@ -958,9 +965,9 @@ export default function MainPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="add-dep-version" className="block text-sm font-medium text-slate-700 mb-1">Version</label>
+              <label htmlFor="new-dep-version" className="block text-sm font-medium text-slate-700 mb-1">Version</label>
               <input
-                id="add-dep-version"
+                id="new-dep-version"
                 type="text"
                 value={newDepData.version}
                 onChange={e => setNewDepData({...newDepData, version: e.target.value})}
@@ -969,9 +976,9 @@ export default function MainPage() {
               />
             </div>
             <div>
-              <label htmlFor="add-dep-category" className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <label htmlFor="new-dep-category" className="block text-sm font-medium text-slate-700 mb-1">Category</label>
               <select
-                id="add-dep-category"
+                id="new-dep-category"
                 value={newDepData.category}
                 onChange={e => setNewDepData({...newDepData, category: e.target.value})}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
@@ -982,7 +989,7 @@ export default function MainPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</label>
+            <span className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</span>
             <div className="border border-slate-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
               {nodes.map(node => (
                 <label key={node.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
