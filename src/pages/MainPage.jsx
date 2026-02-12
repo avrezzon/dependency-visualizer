@@ -173,7 +173,7 @@ export default function MainPage() {
 
   // Determine which nodes are outdated (Boolean only) - Optimized O(N+E)
   const nodeStatusMap = useMemo(() => {
-    const statusMap = {}; // nodeId -> { isOutdated: boolean }
+    const statusMap = {}; // nodeId -> isOutdated (boolean)
     const memo = {};
 
     const checkNodeStatus = (nodeId) => {
