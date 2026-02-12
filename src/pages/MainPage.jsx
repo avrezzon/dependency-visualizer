@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Plus,
   Download,
+  X,
   Trash2
 } from 'lucide-react';
 import Modal from '../components/Modal';
@@ -181,56 +182,13 @@ export default function MainPage() {
     return { downstream, upstream };
   }, [edges]);
 
-  // Determine which nodes are outdated (Boolean only) - Optimized O(N+E)
-  const nodeStatusMap = useMemo(() => {
-    const statusMap = {}; // nodeId -> { isOutdated: boolean }
+  // Determine which nodes are outdated (boolean only) - fast O(N+E) check
+  const nodeStatus = useMemo(() => {
+    const status = {};
     const memo = {};
 
-    const checkNodeStatus = (nodeId) => {
+    const checkStatus = (nodeId) => {
       if (memo[nodeId] !== undefined) return memo[nodeId];
-
-      const node = nodesMap.get(nodeId);
-      if (!node) return false;
-
-      const directLocks = dependencyLocks[node.id] || {};
-
-      // Check direct dependencies
-      for (const [depId, lockedVersion] of Object.entries(directLocks)) {
-        const actualDep = nodesMap.get(depId);
-        if (actualDep && actualDep.version !== lockedVersion) {
-          memo[nodeId] = true;
-          return true;
-        }
-      }
-
-      // Recursively check upstream dependencies
-      const upstreamDeps = connections.upstream[node.id] || [];
-      for (const depId of upstreamDeps) {
-        if (checkNodeStatus(depId)) {
-          memo[nodeId] = true;
-          return true;
-        }
-      }
-
-      memo[nodeId] = false;
-      return false;
-    };
-
-    nodes.forEach(node => {
-      statusMap[node.id] = { isOutdated: checkNodeStatus(node.id) };
-    });
-
-    return statusMap;
-  }, [nodes, dependencyLocks, connections, nodesMap]);
-
-  // Determine detailed outliers ONLY for the selected node
-  const selectedNodeOutliers = useMemo(() => {
-    if (!selectedNode) return { isOutdated: false, outliers: [] };
-
-    const memo = {};
-
-    const checkNodeStateDetailed = (nodeId) => {
-      if (memo[nodeId]) return memo[nodeId];
 
       const node = nodesMap.get(nodeId);
       if (!node) return false;
@@ -280,6 +238,7 @@ export default function MainPage() {
       const directLocks = dependencyLocks[node.id] || {};
       const directOutliers = [];
 
+      // Check direct
       for (const [depId, lockedVersion] of Object.entries(directLocks)) {
         const actualDep = nodesMap.get(depId);
         if (actualDep && actualDep.version !== lockedVersion) {
@@ -291,37 +250,26 @@ export default function MainPage() {
         }
       }
 
+      // Check upstream
       const upstreamDeps = connections.upstream[node.id] || [];
       const transitiveOutliersMap = new Map();
 
       for (const depId of upstreamDeps) {
-        const depState = checkNodeStateDetailed(depId);
-        if (depState.isOutdated) {
-          isTransitivelyOutdated = true;
-          if (depState.outliers) {
-            for (const outlier of depState.outliers) {
-              if (!transitiveOutliersMap.has(outlier.name)) {
-                transitiveOutliersMap.set(outlier.name, outlier);
-              }
-            }
+        const depOutliers = collectOutliers(depId);
+        for (const outlier of depOutliers) {
+          if (!transitiveOutliersMap.has(outlier.name)) {
+            transitiveOutliersMap.set(outlier.name, outlier);
           }
         }
       }
 
-      const transitiveOutliers = Array.from(transitiveOutliersMap.values());
-      const isOutdated = directOutliers.length > 0 || isTransitivelyOutdated;
-
-      const result = {
-        isOutdated,
-        outliers: [...directOutliers, ...transitiveOutliers],
-        isTransitivelyOutdated
-      };
-      memo[nodeId] = result;
-      return result;
+      const allOutliers = [...directOutliers, ...transitiveOutliersMap.values()];
+      memo[nodeId] = allOutliers;
+      return allOutliers;
     };
 
-    return checkNodeStateDetailed(selectedNode);
-  }, [selectedNode, nodesMap, dependencyLocks, connections]);
+    return collectOutliers(selectedNode);
+  }, [selectedNode, dependencyLocks, connections, nodesMap]);
 
   // Handle delete node
   const handleDeleteNode = () => {
@@ -720,7 +668,7 @@ export default function MainPage() {
                   {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = nodeStatusMap[node.id];
+                    const isOutdated = nodeStatus[node.id];
 
                     return (
                       <GraphNode
@@ -752,7 +700,7 @@ export default function MainPage() {
               ) : (
                 (() => {
                   const node = nodes.find(n => n.id === selectedNode);
-                  const status = selectedNodeOutliers;
+                  const isOutdated = nodeStatus[node.id];
                   const upstream = connections.upstream[node.id] || [];
                   const downstream = connections.downstream[node.id] || [];
 
@@ -935,116 +883,117 @@ export default function MainPage() {
       </div>
 
       {/* Add Dependency Modal */}
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Dependency"
-        footer={
-          <>
-            <button
-              onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddDependency}
-              disabled={!newDepData.name}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Create Dependency
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="new-dep-name" className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
-            <input
-              id="new-dep-name"
-              type="text"
-              value={newDepData.name}
-              onChange={e => setNewDepData({...newDepData, name: e.target.value})}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="e.g. auth-service"
-            />
-          </div>
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800">Add New Dependency</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close modal">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="new-dep-org" className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
-              <input
-                id="new-dep-org"
-                type="text"
-                value={newDepData.org}
-                onChange={e => setNewDepData({...newDepData, org: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="e.g. my-org"
-              />
-            </div>
-            <div>
-              <label htmlFor="new-dep-artifact" className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
-              <input
-                id="new-dep-artifact"
-                type="text"
-                value={newDepData.artifactId}
-                onChange={e => setNewDepData({...newDepData, artifactId: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="e.g. my-artifact"
-              />
-            </div>
-          </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Dependency Name (Label)</label>
+                <input
+                  type="text"
+                  value={newDepData.name}
+                  onChange={e => setNewDepData({...newDepData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. auth-service"
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="new-dep-version" className="block text-sm font-medium text-slate-700 mb-1">Version</label>
-              <input
-                id="new-dep-version"
-                type="text"
-                value={newDepData.version}
-                onChange={e => setNewDepData({...newDepData, version: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="1.0.0"
-              />
-            </div>
-            <div>
-              <label htmlFor="new-dep-category" className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-              <select
-                id="new-dep-category"
-                value={newDepData.category}
-                onChange={e => setNewDepData({...newDepData, category: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              >
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <span className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</span>
-            <div className="border border-slate-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
-              {nodes.map(node => (
-                <label key={node.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Organization</label>
                   <input
-                    type="checkbox"
-                    checked={newDepData.consumers.includes(node.id)}
-                    onChange={e => {
-                      if (e.target.checked) {
-                        setNewDepData(prev => ({...prev, consumers: [...prev.consumers, node.id]}));
-                      } else {
-                        setNewDepData(prev => ({...prev, consumers: prev.consumers.filter(id => id !== node.id)}));
-                      }
-                    }}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    type="text"
+                    value={newDepData.org}
+                    onChange={e => setNewDepData({...newDepData, org: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. my-org"
                   />
-                  <span className="text-sm text-slate-700">{node.label}</span>
-                  <span className="text-xs text-slate-400 ml-auto">({node.type})</span>
-                </label>
-              ))}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Artifact ID</label>
+                  <input
+                    type="text"
+                    value={newDepData.artifactId}
+                    onChange={e => setNewDepData({...newDepData, artifactId: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. my-artifact"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Version</label>
+                  <input
+                    type="text"
+                    value={newDepData.version}
+                    onChange={e => setNewDepData({...newDepData, version: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="1.0.0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                  <select
+                    value={newDepData.category}
+                    onChange={e => setNewDepData({...newDepData, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Used By (Consumers)</label>
+                <div className="border border-slate-300 rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
+                  {nodes.map(node => (
+                    <label key={node.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newDepData.consumers.includes(node.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setNewDepData(prev => ({...prev, consumers: [...prev.consumers, node.id]}));
+                          } else {
+                            setNewDepData(prev => ({...prev, consumers: prev.consumers.filter(id => id !== node.id)}));
+                          }
+                        }}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-slate-700">{node.label}</span>
+                      <span className="text-xs text-slate-400 ml-auto">({node.type})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDependency}
+                  disabled={!newDepData.name}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Dependency
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </Modal>
+      )}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
