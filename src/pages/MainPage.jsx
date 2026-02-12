@@ -4,8 +4,6 @@ import {
   Layers,
   ArrowRight,
   AlertCircle,
-  Database,
-  Cpu,
   Activity,
   RefreshCw,
   Plus,
@@ -21,6 +19,7 @@ import GraphNode from '../components/GraphNode';
 import { bumpString } from '../utils/versioning';
 import { generateRandomGraph } from '../utils/randomGraph';
 import { validateSessionData } from '../utils/security';
+import { NODE_ICONS } from '../utils/nodeIcons';
 
 // --- Configuration & Initial Data ---
 
@@ -82,15 +81,6 @@ const INITIAL_EDGES = [
 ];
 
 // --- Utilities ---
-
-const getIcon = (type) => {
-  switch(type) {
-    case 'core': return <Box className="w-5 h-5 text-blue-500" />;
-    case 'repo': return <Database className="w-5 h-5 text-emerald-500" />;
-    case 'app': return <Cpu className="w-5 h-5 text-purple-500" />;
-    default: return <Activity className="w-5 h-5" />;
-  }
-};
 
 const categories = ['Foundation', 'Data Access', 'Readers', 'Processors'];
 
@@ -217,7 +207,7 @@ export default function MainPage() {
     };
 
     nodes.forEach(node => {
-      statusMap[node.id] = { isOutdated: checkNodeStatus(node.id) };
+      statusMap[node.id] = checkNodeStatus(node.id);
     });
 
     return statusMap;
@@ -688,7 +678,7 @@ export default function MainPage() {
                   {(nodesByCategory[cat] || []).map(node => {
                     const isHighlighted = !relatedNodesSet || relatedNodesSet.has(node.id);
                     const isSelected = selectedNode === node.id;
-                    const status = nodeStatusMap[node.id];
+                    const isOutdated = nodeStatusMap[node.id];
 
                     return (
                       <GraphNode
@@ -696,7 +686,7 @@ export default function MainPage() {
                         node={node}
                         isSelected={isSelected}
                         isHighlighted={isHighlighted}
-                        isOutdated={status.isOutdated}
+                        isOutdated={isOutdated}
                         hasUpstream={!!connections.upstream[node.id]}
                         hasDownstream={!!connections.downstream[node.id]}
                         onSelect={setSelectedNode}
@@ -816,7 +806,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2">
-                                      {getIcon(upNode.type)}
+                                      {NODE_ICONS[upNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{upNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{upNode.version}</Badge>
@@ -848,7 +838,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2 opacity-70">
-                                      {getIcon(upNode.type)}
+                                      {NODE_ICONS[upNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-500 group-hover:text-indigo-600">{upNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{upNode.version}</Badge>
@@ -881,7 +871,7 @@ export default function MainPage() {
                                     className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer border border-transparent hover:border-slate-200 group"
                                   >
                                     <div className="flex items-center gap-2">
-                                      {getIcon(downNode.type)}
+                                      {NODE_ICONS[downNode.type] || NODE_ICONS.default}
                                       <span className="text-sm text-slate-600 group-hover:text-indigo-600">{downNode.label}</span>
                                     </div>
                                     <Badge color="slate">v{downNode.version}</Badge>

@@ -1,14 +1,6 @@
 import { memo } from 'react';
-import { Box, Database, Cpu, Activity, AlertCircle } from 'lucide-react';
-
-const getIcon = (type) => {
-  switch(type) {
-    case 'core': return <Box className="w-5 h-5 text-blue-500" />;
-    case 'repo': return <Database className="w-5 h-5 text-emerald-500" />;
-    case 'app': return <Cpu className="w-5 h-5 text-purple-500" />;
-    default: return <Activity className="w-5 h-5" />;
-  }
-};
+import { AlertCircle } from 'lucide-react';
+import { NODE_ICONS } from '../utils/nodeIcons';
 
 const GraphNode = memo(({
   node,
@@ -52,7 +44,7 @@ const GraphNode = memo(({
       <div className="flex flex-col mb-2">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
-            {getIcon(node.type)}
+            {NODE_ICONS[node.type] || NODE_ICONS.default}
             <span className="font-semibold text-sm">{node.label}</span>
           </div>
           {isOutdated && (
