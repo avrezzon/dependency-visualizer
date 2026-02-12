@@ -18,6 +18,6 @@
 **Learning:** Fixed invalid nesting of inputs inside buttons and implemented focus management for the WelcomeModal. Focusing the first interactive element on mount significantly improves keyboard usability for mandatory modals.
 **Action:** Ensure all future modals, even custom ones, have role="dialog", aria-modal="true", and manage initial focus.
 
-## 2026-02-04 - Modal Consistency Audit
-**Learning:** Identified another custom modal implementation ("Add Dependency") in `MainPage.jsx` that lacked accessibility roles and keyboard support. Replacing it with the shared `Modal` component instantly provided `role="dialog"`, `aria-modal`, `Escape` key support, and focus trapping.
-**Action:** When working in older files, actively look for `fixed inset-0` or similar classes that suggest ad-hoc modal implementations and replace them with the standard `Modal` component.
+## 2026-02-05 - Accessible State Indicators
+**Learning:** Visual-only state indicators (like icons or colors) must be exposed to screen readers. Modifying the parent container's `aria-label` is often cleaner than adding hidden text if the container is already interactive.
+**Action:** When adding status icons to interactive elements, update the parent's `aria-label` with the status text and hide the icon with `aria-hidden='true'` and add a `title` for mouse users.
