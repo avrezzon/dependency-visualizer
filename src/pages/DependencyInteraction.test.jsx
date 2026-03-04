@@ -1,10 +1,15 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import MainPage from './MainPage';
 
 describe('Dependency Interaction', () => {
   it('allows deleting a dependency', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     // Check node exists
     expect(screen.getByTestId('node-data:repo-a')).toBeInTheDocument();
@@ -31,7 +36,11 @@ describe('Dependency Interaction', () => {
   });
 
   it('allows creating a release with custom version and optional fields', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     const node = screen.getByTestId('node-data:repo-b');
     fireEvent.click(node);

@@ -1,10 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import MainPage from './MainPage';
 
 describe('Add Dependency Modal', () => {
   it('opens modal when Add Dependency button is clicked', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     // Find the "Add Dependency" button. It might be hidden by text on small screens, so look for text or icon.
     // The button has "Add Dependency" text (hidden sm:inline) and "Add" (sm:hidden).
@@ -17,7 +22,11 @@ describe('Add Dependency Modal', () => {
   });
 
   it('closes modal when Cancel is clicked', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     // Open modal
     const addBtn = screen.getByRole('button', { name: /Add Dependency/i });
@@ -32,7 +41,11 @@ describe('Add Dependency Modal', () => {
   });
 
   it('closes modal when Escape key is pressed', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     // Open modal
     const addBtn = screen.getByRole('button', { name: /Add Dependency/i });
@@ -49,7 +62,11 @@ describe('Add Dependency Modal', () => {
   });
 
   it('creates a new dependency when form is submitted', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
 
     // Open modal
     const addBtn = screen.getByRole('button', { name: /Add Dependency/i });
