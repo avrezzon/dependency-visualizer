@@ -1,17 +1,26 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import MainPage from './MainPage';
 
 describe('MainPage', () => {
   it('renders the header correctly', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     // Use a more specific query to distinguish from the modal title
     expect(screen.getByRole('heading', { level: 1, name: /DepManager/i })).toBeInTheDocument();
     expect(screen.getByText(/Microservice Version Control/i)).toBeInTheDocument();
   });
 
   it('renders initial nodes', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     // Check for a core node by test id
     expect(screen.getByTestId('node-core:ext-models')).toBeInTheDocument();
     // Check for a repo node by test id
@@ -22,7 +31,11 @@ describe('MainPage', () => {
   });
 
   it('updates sidebar when a node is selected', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Initial state: empty sidebar message
     expect(screen.getByText(/Select a microservice or library/i)).toBeInTheDocument();
@@ -40,7 +53,11 @@ describe('MainPage', () => {
   });
 
   it('bumps version when Patch button is clicked', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select a node
     const node = screen.getByTestId('node-core:ext-models');
@@ -61,7 +78,11 @@ describe('MainPage', () => {
   });
 
   it('bumps minor version when Minor button is clicked', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select a node
     const node = screen.getByTestId('node-core:ext-models');
@@ -81,7 +102,11 @@ describe('MainPage', () => {
   });
 
   it('bumps major version when Major button is clicked', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select a node
     const node = screen.getByTestId('node-core:ext-models');
@@ -101,7 +126,11 @@ describe('MainPage', () => {
   });
 
   it('shows upstream dependencies for a selected node', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select Reader A which depends on common, repo-a, repo-c, repo-d
     const readerA = screen.getByTestId('node-app:reader-a');
@@ -119,7 +148,11 @@ describe('MainPage', () => {
   });
 
   it('shows downstream dependencies for a selected node', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select common-lib which is used by multiple readers
     const commonLib = screen.getByTestId('node-core:common-lib');
@@ -134,7 +167,11 @@ describe('MainPage', () => {
   });
 
   it('detects dependency drift and shows Rebuild & Bump App button', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // First bump a core library version
     const extModels = screen.getByTestId('node-core:ext-models');
@@ -173,7 +210,11 @@ describe('MainPage', () => {
   });
 
   it('updates app dependencies when Rebuild & Bump Node is clicked', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Bump common version
     const commonLib = screen.getByTestId('node-core:common-lib');
@@ -202,7 +243,11 @@ describe('MainPage', () => {
   });
 
   it('highlights related nodes on hover', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Hover over a node
     const commonLib = screen.getByTestId('node-core:common-lib');
@@ -214,7 +259,11 @@ describe('MainPage', () => {
   });
 
   it('highlights related nodes on selection', () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Select a node
     const commonLib = screen.getByTestId('node-core:common-lib');

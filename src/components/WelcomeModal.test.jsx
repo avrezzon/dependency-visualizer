@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import WelcomeModal from './WelcomeModal';
 
 describe('WelcomeModal Component', () => {
@@ -10,7 +11,11 @@ describe('WelcomeModal Component', () => {
   };
 
   it('renders correctly', () => {
-    render(<WelcomeModal {...defaultProps} />);
+    render(
+      <MemoryRouter>
+        <WelcomeModal {...defaultProps} />
+      </MemoryRouter>
+    );
     expect(screen.getByText('Welcome to DepManager')).toBeInTheDocument();
     expect(screen.getByText('Upload a Session')).toBeInTheDocument();
     expect(screen.getByText('Start Fresh')).toBeInTheDocument();
@@ -18,7 +23,11 @@ describe('WelcomeModal Component', () => {
   });
 
   it('has accessible dialog role and attributes', () => {
-    render(<WelcomeModal {...defaultProps} />);
+    render(
+      <MemoryRouter>
+        <WelcomeModal {...defaultProps} />
+      </MemoryRouter>
+    );
 
     // Should have role="dialog"
     const dialog = screen.getByRole('dialog');
@@ -36,7 +45,11 @@ describe('WelcomeModal Component', () => {
   });
 
   it('sets initial focus to the first interactive element', async () => {
-    render(<WelcomeModal {...defaultProps} />);
+    render(
+      <MemoryRouter>
+        <WelcomeModal {...defaultProps} />
+      </MemoryRouter>
+    );
 
     // The "Upload a Session" button should be focused
     // We look for the button containing the text "Upload a Session"

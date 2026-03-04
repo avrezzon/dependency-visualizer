@@ -1,5 +1,6 @@
 import { useRef, useEffect, useId } from 'react';
-import { UploadCloud, Zap, FilePlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { UploadCloud, Zap, FilePlus, BookOpen } from 'lucide-react';
 
 export default function WelcomeModal({ onUpload, onNew, onRandom }) {
   const fileInputRef = useRef(null);
@@ -27,7 +28,16 @@ export default function WelcomeModal({ onUpload, onNew, onRandom }) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200">
         <div className="px-8 py-6 text-center">
           <h2 id={titleId} className="text-2xl font-bold text-slate-800 mb-2">Welcome to DepManager</h2>
-          <p className="text-slate-500 mb-8">How would you like to start your session?</p>
+          <p className="text-slate-500 mb-6">How would you like to start your session?</p>
+          <div className="flex justify-center">
+             <Link
+                to="/guide"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors mb-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                View Versioning Guide first
+              </Link>
+          </div>
         </div>
 
         {/* Hidden input moved outside for valid HTML */}

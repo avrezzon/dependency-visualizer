@@ -1,10 +1,15 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import MainPage from './pages/MainPage';
 
 describe('Transitive Dependency Drift', () => {
   it('displays transitive outliers when a deep dependency is updated', async () => {
-    render(<MainPage />);
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>
+    );
     
     // Chain: reader-a -> common-lib -> ext.models
     
